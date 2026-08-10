@@ -206,6 +206,25 @@ switch ($action) {
         (new HomeController())->clearCart();
         break;
 
+    case 'checkout':
+        routeRequireLogin();
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+        (new HomeController())->checkout();
+        break;
+
+    case 'place-order':
+        routeRequireLogin();
+        (new HomeController())->placeOrder();
+        break;
+
+    case 'order-detail':
+        routeRequireLogin();
+        (new HomeController())->orderDetail();
+        break;
+
+
     case 'categories':
         routeRequireLogin();
 
@@ -313,6 +332,12 @@ switch ($action) {
         (new AdminController())->orders();
         break;
 
+    case 'admin-order-status':
+        routeRequireAdmin();
+        (new AdminController())->updateOrderStatus();
+        break;
+
+
     case 'admin-categories':
         routeRequireAdmin();
 
@@ -377,12 +402,6 @@ switch ($action) {
         routeRequireAdmin();
 
         (new AdminController())->deleteReview();
-        break;
-
-    case 'admin-statistics':
-        routeRequireAdmin();
-
-        (new AdminController())->statistics();
         break;
 
     /*

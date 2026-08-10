@@ -4,6 +4,44 @@ class Product extends BaseModel
 {
     protected $table = 'san_pham';
 
+    public function getCatalog(array $filters = [], int $limit = 24): array
+    {
+        $conditions = [];
+        $params = [];
+        $keyword = preg_replace('/\s+/u', ' ', trim((string) ($filters['keyword'] ?? '')));
+        if ($keyword !== '') {
+            foreach (preg_split('/\s+/u', $keyword) ?: [] as $index => $word) {
+                $key = ':keyword_' . $index;
+                $conditions[] = "p.name LIKE {$key}";
+                $params[$key] = '%' . $word . '%';
+            }
+        }
+        if (!empty($filters['danh_muc_id'])) {
+            $conditions[] = 'p.danh_muc_id = :danh_muc_id';
+            $params[':danh_muc_id'] = (int) $filters['danh_muc_id'];
+        }
+        $having = [];
+        if (($filters['min_price'] ?? '') !== '') { $having[] = 'gia_den >= :min_price'; $params[':min_price'] = (float) $filters['min_price']; }
+        if (($filters['max_price'] ?? '') !== '') { $having[] = 'gia_tu <= :max_price'; $params[':max_price'] = (float) $filters['max_price']; }
+        $sorts = ['price_asc' => 'gia_tu ASC, p.id DESC', 'price_desc' => 'gia_tu DESC, p.id DESC', 'rating' => 'danh_gia_tb DESC, tong_danh_gia DESC, p.id DESC'];
+        $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+        $havingSql = $having ? 'HAVING ' . implode(' AND ', $having) : '';
+        $orderBy = $sorts[$filters['sort'] ?? ''] ?? 'p.id DESC';
+        $limit = max(1, min(100, $limit));
+        $sql = "SELECT p.id, p.name, p.gioi_thieu, p.anh, p.danh_muc_id, c.name AS category_name,
+                    COALESCE(MIN(v.gia_ban), 0) AS gia_tu, COALESCE(MAX(v.gia_ban), 0) AS gia_den,
+                    COALESCE(SUM(v.so_luong), 0) AS ton_kho, ROUND(COALESCE(AVG(r.so_sao), 0), 1) AS danh_gia_tb,
+                    COUNT(DISTINCT r.id) AS tong_danh_gia
+                FROM {$this->table} p
+                LEFT JOIN danh_muc c ON c.id = p.danh_muc_id
+                LEFT JOIN chi_tiet_san_pham v ON v.san_pham_id = p.id
+                LEFT JOIN danh_gia r ON r.san_pham_id = p.id
+                {$where} GROUP BY p.id {$havingSql} ORDER BY {$orderBy} LIMIT {$limit}";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     /**
      * Lấy danh sách sản phẩm dành cho Admin với các trường tính toán:
      * - Giá từ (gia_tu): giá bán nhỏ nhất

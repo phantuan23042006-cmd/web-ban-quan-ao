@@ -236,6 +236,7 @@ $totalPages = max(1, $totalPages ?? 1);
                                 <span class="order-status <?= e($statusClass) ?>">
                                     <?= e($order['status']) ?>
                                 </span>
+                                <form method="post" action="<?= BASE_URL ?>?action=admin-order-status" style="margin-top:8px"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="order_id" value="<?= e($order['id']) ?>"><select name="status"><option>pending</option><option>confirmed</option><option>shipping</option><option>completed</option><option>cancelled</option></select><button>Cập nhật</button></form>
                             </td>
                             <td><?= e($order['total']) ?></td>
                         </tr>
