@@ -131,6 +131,13 @@ class Review extends BaseModel
         return $stmt->fetch() ?: null;
     }
 
+    public function findByUserProduct(int $userId, int $productId): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM ' . $this->table . ' WHERE user_id = :user_id AND san_pham_id = :product_id ORDER BY id DESC LIMIT 1');
+        $stmt->execute([':user_id' => $userId, ':product_id' => $productId]);
+        return $stmt->fetch() ?: null;
+    }
+
     /**
      * Thêm đánh giá mới (dành cho khách hàng).
      */

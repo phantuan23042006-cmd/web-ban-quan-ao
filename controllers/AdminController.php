@@ -621,13 +621,26 @@ class AdminController
     | MẸO GIỮ CÁC METHOD HIỆN CÓ CỦA ADMINCONTROLLER
     |--------------------------------------------------------------------------
     */
-    public function orders()
+public function orders()
 {
+    $keyword = trim($_GET['keyword'] ?? '');
+    $status = trim($_GET['filter_status'] ?? '');
+    $orders = array_map(static fn($o) => ['id'=>$o['id'],'customer'=>$o['customer_name'],'date'=>$o['created_at'],'status'=>$o['status'],'total'=>number_format($o['total_amount'],0,',','.').'đ'], (new Order())->getAllAdmin());
+    if ($keyword !== '') $orders = array_values(array_filter($orders, static fn($o) => stripos($o['customer'], $keyword) !== false || stripos((string)$o['id'], $keyword) !== false));
+    if ($status !== '') $orders = array_values(array_filter($orders, static fn($o) => $o['status'] === $status));
+    $page = 1; $totalPages = 1;
     $title = 'Quản lý đơn hàng';
     $view = 'admin/orders';
     $layout = 'admin';
 
     require PATH_VIEW_MAIN;
+}
+
+public function updateOrderStatus()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_validate($_POST['csrf_token'] ?? null)) { header('Location: ' . BASE_URL . '?action=admin-orders'); exit; }
+    (new Order())->updateStatus((int)($_POST['order_id'] ?? 0), (string)($_POST['status'] ?? 'pending'));
+    header('Location: ' . BASE_URL . '?action=admin-orders'); exit;
 }
 
 /*
