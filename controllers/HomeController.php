@@ -158,4 +158,131 @@ class HomeController
             ],
         ];
     }
+
+    public function cart()
+{
+    $this->requireLogin();
+
+    if (($_SESSION['user']['role'] ?? '') === 'admin') {
+        header('Location: ' . BASE_URL . '?action=admin-dashboard');
+        exit;
+    }
+
+    $warnings = [];
+    $cartModel = new Cart();
+    $items = $cartModel->getItems($warnings);
+
+    $totalQuantity = $cartModel->getTotalQuantity();
+    $totalAmount = 0;
+
+    foreach ($items as $item) {
+        $totalAmount += (float) $item['subtotal'];
+    }
+
+    $title = 'Giỏ hàng';
+    $view = 'cart';
+    $layout = 'user';
+
+    $successMessage = $_SESSION['success_message'] ?? null;
+    $errorMessage = $_SESSION['error_message'] ?? null;
+
+    unset($_SESSION['success_message']);
+    unset($_SESSION['error_message']);
+
+    require PATH_VIEW_MAIN;
+}
+
+public function addToCart()
+{
+    $this->requireLogin();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . BASE_URL . '?action=products');
+        exit;
+    }
+
+    $productId = (int) ($_POST['san_pham_id'] ?? 0);
+    $variantId = (int) ($_POST['variant_id'] ?? 0);
+    $quantity = (int) ($_POST['quantity'] ?? 1);
+
+    try {
+        $cartModel = new Cart();
+
+        $result = $cartModel->add(
+            $productId,
+            $variantId,
+            $quantity
+        );
+
+        $_SESSION['success_message'] =
+            "Đã thêm {$result['product_name']} - Size {$result['size']} vào giỏ hàng.";
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = $e->getMessage();
+    }
+
+    header(
+        'Location: ' .
+        BASE_URL .
+        '?action=product-detail&id=' .
+        $productId
+    );
+    exit;
+}
+
+public function updateCart()
+{
+    $this->requireLogin();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . BASE_URL . '?action=cart');
+        exit;
+    }
+
+    $variantId = (int) ($_POST['variant_id'] ?? 0);
+    $quantity = (int) ($_POST['quantity'] ?? 0);
+
+    try {
+        $cartModel = new Cart();
+        $cartModel->updateQuantity($variantId, $quantity);
+
+        $_SESSION['success_message'] =
+            'Đã cập nhật số lượng sản phẩm.';
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = $e->getMessage();
+    }
+
+    header('Location: ' . BASE_URL . '?action=cart');
+    exit;
+}
+
+public function removeFromCart()
+{
+    $this->requireLogin();
+
+    $variantId = (int) ($_POST['variant_id'] ?? $_GET['variant_id'] ?? 0);
+
+    $cartModel = new Cart();
+
+    if ($cartModel->remove($variantId)) {
+        $_SESSION['success_message'] =
+            'Đã xóa sản phẩm khỏi giỏ hàng.';
+    }
+
+    header('Location: ' . BASE_URL . '?action=cart');
+    exit;
+}
+
+public function clearCart()
+{
+    $this->requireLogin();
+
+    $cartModel = new Cart();
+    $cartModel->clear();
+
+    $_SESSION['success_message'] =
+        'Đã xóa toàn bộ giỏ hàng.';
+
+    header('Location: ' . BASE_URL . '?action=cart');
+    exit;
+}
 }

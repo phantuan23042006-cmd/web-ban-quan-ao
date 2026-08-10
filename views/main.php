@@ -980,6 +980,21 @@ if (function_exists('mb_substr')) {
 
                 <li>
                     <a
+                        class="<?= menuActive(['admin-suppliers', 'admin-supplier-detail'], $currentAction) ?>"
+                        href="<?= BASE_URL ?>?action=admin-suppliers"
+                    >
+                        <span class="admin-menu-icon">
+                            🏬
+                        </span>
+
+                        <span>
+                            Nơi nhập hàng
+                        </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a
                         class="<?= menuActive(['admin-orders'], $currentAction) ?>"
                         href="<?= BASE_URL ?>?action=admin-orders"
                     >

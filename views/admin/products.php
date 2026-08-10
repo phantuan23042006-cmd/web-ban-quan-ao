@@ -1,20 +1,27 @@
 <?php
 $products = $products ?? [];
 $categories = $categories ?? [];
+$suppliers = $suppliers ?? [];
 $keyword = $keyword ?? '';
-$category = $category ?? '';
-$status = $status ?? '';
+$danhMucId = $danhMucId ?? '';
+$noiNhapHangId = $noiNhapHangId ?? '';
 $page = $page ?? 1;
 $totalPages = max(1, $totalPages ?? 1);
+$totalItems = $totalItems ?? 0;
+
+$successMessage = $_SESSION['success_message'] ?? null;
+$errorMessage = $_SESSION['error_message'] ?? null;
+unset($_SESSION['success_message'], $_SESSION['error_message']);
 ?>
 
 <style>
     .admin-products-page {
-        display: grid;
+        display: flex;
+        flex-direction: column;
         gap: 24px;
     }
 
-    .admin-products-card {
+    .admin-card {
         padding: 24px;
         border-radius: 20px;
         background: #ffffff;
@@ -22,237 +29,336 @@ $totalPages = max(1, $totalPages ?? 1);
         box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
     }
 
-    .admin-products-toolbar {
+    .toolbar {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        gap: 18px;
+        align-items: center;
+        gap: 16px;
         flex-wrap: wrap;
     }
 
-    .admin-products-toolbar h3 {
+    .toolbar h3 {
         margin: 0;
-        font-size: 20px;
+        font-size: 22px;
         color: #0f172a;
     }
 
-    .admin-products-form {
+    .alert {
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .alert-success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .alert-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    .filter-form {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: 2fr 1fr 1fr auto;
         gap: 14px;
         align-items: end;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f1f5f9;
     }
 
-    .admin-products-form .field {
-        display: grid;
-        gap: 8px;
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
 
-    .admin-products-form input,
-    .admin-products-form select,
-    .admin-products-form button {
+    .field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .field input,
+    .field select {
         min-height: 44px;
         padding: 0 12px;
         border-radius: 12px;
-        border: 1px solid #d7e1ef;
+        border: 1px solid #cbd5e1;
         background: #f8fafc;
-        color: #0f172a;
         font-size: 14px;
     }
 
-    .admin-products-form button {
-        border: 0;
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 18px;
+        min-height: 44px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
         background: linear-gradient(135deg, #7c3aed, #db2777);
         color: #ffffff;
-        cursor: pointer;
     }
 
-    .admin-products-table-wrap {
-        overflow-x: auto;
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
     }
 
-    .admin-products-table {
+    .btn-info {
+        background: #0284c7;
+        color: #ffffff;
+    }
+
+    .btn-danger {
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        min-height: 34px;
+        font-size: 13px;
+        border-radius: 8px;
+    }
+
+    .product-table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 900px;
     }
 
-    .admin-products-table th,
-    .admin-products-table td {
-        padding: 16px 14px;
+    .product-table th,
+    .product-table td {
+        padding: 14px 16px;
         border-bottom: 1px solid #e2e8f0;
         text-align: left;
         vertical-align: middle;
     }
 
-    .admin-products-table th {
+    .product-table th {
         color: #64748b;
         font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
+        font-weight: 700;
         text-transform: uppercase;
     }
 
-    .admin-products-table td {
-        color: #334155;
-        font-size: 14px;
+    .img-thumb {
+        width: 54px;
+        height: 54px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
     }
 
-    .status-badge {
+    .star-badge {
         display: inline-flex;
         align-items: center;
-        padding: 7px 11px;
-        border-radius: 999px;
-        font-size: 12px;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        background: #fef9c3;
+        color: #a16207;
         font-weight: 700;
+        font-size: 13px;
     }
 
-    .status-badge.active {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .status-badge.inactive {
-        background: #fee2e2;
-        color: #b91c1c;
-    }
-
-    .admin-pagination {
+    .pagination {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        padding-top: 14px;
+        padding-top: 16px;
         color: #64748b;
         font-size: 14px;
     }
 
-    .admin-pagination a {
-        margin-left: 6px;
-        padding: 8px 12px;
+    .pagination-links {
+        display: flex;
+        gap: 6px;
+    }
+
+    .pagination-links a {
+        padding: 8px 14px;
         border-radius: 10px;
+        background: #f1f5f9;
+        color: #475569;
         text-decoration: none;
-        color: #4c1d95;
         font-weight: 700;
     }
 
-    .admin-pagination a.active,
-    .admin-pagination a:hover {
-        background: #ede9fe;
-    }
-
-    .admin-empty-state {
-        padding: 30px;
-        border-radius: 18px;
-        border: 1px dashed #cbd5e1;
-        background: #f8fafc;
-        color: #64748b;
-        text-align: center;
+    .pagination-links a.active {
+        background: #7c3aed;
+        color: #ffffff;
     }
 
     @media (max-width: 900px) {
-        .admin-products-form {
+        .filter-form {
             grid-template-columns: 1fr;
         }
     }
 </style>
 
 <div class="admin-products-page">
-    <div class="admin-products-card">
-        <div class="admin-products-toolbar">
+    <?php if ($successMessage): ?>
+        <div class="alert alert-success">✓ <?= e($successMessage) ?></div>
+    <?php endif; ?>
+
+    <?php if ($errorMessage): ?>
+        <div class="alert alert-danger">✕ <?= e($errorMessage) ?></div>
+    <?php endif; ?>
+
+    <div class="admin-card">
+        <div class="toolbar">
             <div>
                 <h3>Quản lý sản phẩm</h3>
-                <p>Quản lý danh sách sản phẩm và bộ lọc theo danh mục, trạng thái.</p>
+                <p style="margin:4px 0 0; color:#64748b; font-size:13px;">Quản lý kho hàng, biến thể size và giá bán sản phẩm</p>
+            </div>
+            <div>
+                <a href="<?= BASE_URL ?>?action=admin-product-create" class="btn btn-primary">+ Thêm sản phẩm</a>
             </div>
         </div>
 
-        <form class="admin-products-form" method="get">
+        <form class="filter-form" action="<?= BASE_URL ?>" method="get">
             <input type="hidden" name="action" value="admin-products">
             <div class="field">
-                <label for="keyword">Từ khóa</label>
-                <input id="keyword" type="text" name="keyword" value="<?= e($keyword) ?>" placeholder="Tên sản phẩm hoặc danh mục">
+                <label for="keyword">Tìm kiếm tên sản phẩm</label>
+                <input id="keyword" type="text" name="keyword" value="<?= e($keyword) ?>" placeholder="Nhập tên sản phẩm...">
             </div>
             <div class="field">
-                <label for="filter_category">Danh mục</label>
-                <select id="filter_category" name="filter_category">
-                    <option value="">Tất cả</option>
+                <label for="danh_muc_id">Danh mục</label>
+                <select id="danh_muc_id" name="danh_muc_id">
+                    <option value="">-- Tất cả danh mục --</option>
                     <?php foreach ($categories as $cat): ?>
-                        <option value="<?= e($cat) ?>" <?= $category === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
+                        <option value="<?= e($cat['id']) ?>" <?= (string)$danhMucId === (string)$cat['id'] ? 'selected' : '' ?>>
+                            <?= e($cat['name']) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div class="field">
-                <label for="filter_status">Trạng thái</label>
-                <select id="filter_status" name="filter_status">
-                    <option value="">Tất cả</option>
-                    <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Hoạt động</option>
-                    <option value="inactive" <?= $status === 'inactive' ? 'selected' : '' ?>>Ngừng bán</option>
+                <label for="noi_nhap_hang_id">Nơi nhập hàng</label>
+                <select id="noi_nhap_hang_id" name="noi_nhap_hang_id">
+                    <option value="">-- Tất cả nơi nhập --</option>
+                    <?php foreach ($suppliers as $sup): ?>
+                        <option value="<?= e($sup['id']) ?>" <?= (string)$noiNhapHangId === (string)$sup['id'] ? 'selected' : '' ?>>
+                            <?= e($sup['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
-            <div class="field">
-                <button type="submit">Lọc</button>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="btn btn-primary">Lọc</button>
+                <?php if ($keyword !== '' || $danhMucId !== '' || $noiNhapHangId !== ''): ?>
+                    <a href="<?= BASE_URL ?>?action=admin-products" class="btn btn-secondary">Đặt lại</a>
+                <?php endif; ?>
             </div>
         </form>
     </div>
 
-    <?php if (!empty($products)): ?>
-        <div class="admin-products-card admin-products-table-wrap">
-            <table class="admin-products-table">
+    <div class="admin-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x: auto;">
+            <table class="product-table">
                 <thead>
                     <tr>
+                        <th style="padding-left:24px;">Mã</th>
+                        <th>Ảnh</th>
                         <th>Tên sản phẩm</th>
                         <th>Danh mục</th>
-                        <th>Giá</th>
-                        <th>Kho</th>
-                        <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
+                        <th>Nơi nhập</th>
+                        <th>Giá từ</th>
+                        <th>Giá đến</th>
+                        <th>Tồn kho</th>
+                        <th>Đánh giá</th>
+                        <th style="padding-right:24px; text-align:right;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($products as $product): ?>
+                    <?php if (!empty($products)): ?>
+                        <?php foreach ($products as $p): ?>
+                            <tr>
+                                <td style="padding-left:24px;">#<?= e($p['id']) ?></td>
+                                <td>
+                                    <?php if (!empty($p['anh'])): ?>
+                                        <img src="<?= BASE_ASSETS_UPLOADS . e($p['anh']) ?>" alt="<?= e($p['name']) ?>" class="img-thumb">
+                                    <?php else: ?>
+                                        <div class="img-thumb" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:10px;">No image</div>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <strong><?= e($p['name']) ?></strong>
+                                </td>
+                                <td><?= e($p['category_name'] ?? '---') ?></td>
+                                <td><?= e($p['supplier_name'] ?? '---') ?></td>
+                                <td style="color:#16a34a; font-weight:700;">
+                                    <?= number_format($p['gia_tu'], 0, ',', '.') ?> đ
+                                </td>
+                                <td style="color:#16a34a; font-weight:700;">
+                                    <?= number_format($p['gia_den'], 0, ',', '.') ?> đ
+                                </td>
+                                <td>
+                                    <span style="font-weight:700; color:<?= $p['ton_kho'] > 0 ? '#0f172a' : '#ef4444' ?>;">
+                                        <?= e($p['ton_kho']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if ($p['danh_gia_tb'] > 0): ?>
+                                        <span class="star-badge">★ <?= e($p['danh_gia_tb']) ?> <small>(<?= e($p['tong_danh_gia']) ?>)</small></span>
+                                    <?php else: ?>
+                                        <span style="color:#94a3b8; font-size:12px;">Chưa có</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="padding-right:24px; text-align:right; white-space:nowrap;">
+                                    <a href="<?= BASE_URL ?>?action=admin-product-detail&id=<?= $p['id'] ?>" class="btn btn-info btn-sm">Xem</a>
+                                    <a href="<?= BASE_URL ?>?action=admin-product-edit&id=<?= $p['id'] ?>" class="btn btn-secondary btn-sm">Sửa</a>
+                                    <a href="<?= BASE_URL ?>?action=admin-product-delete&id=<?= $p['id'] ?>" 
+                                       class="btn btn-danger btn-sm"
+                                       onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm \'<?= e($p['name']) ?>\' và tất cả biến thể, đánh giá liên quan?');">Xóa</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
                         <tr>
-                            <td><?= e($product['name']) ?></td>
-                            <td><?= e($product['category']) ?></td>
-                            <td><?= e($product['price']) ?></td>
-                            <td><?= e($product['stock']) ?></td>
-                            <td>
-                                <span class="status-badge <?= e($product['status']) ?>">
-                                    <?= e($product['status'] === 'active' ? 'Hoạt động' : 'Ngừng bán') ?>
-                                </span>
-                            </td>
-                            <td><?= e($product['created_at']) ?></td>
+                            <td colspan="10" style="text-align: center; color: #64748b; padding: 32px;">Không tìm thấy sản phẩm nào phù hợp.</td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
-        <div class="admin-pagination">
-            <span>Hiển thị <?= e(count($products)) ?> trên tổng <?= e(count($products)) ?> sản phẩm</span>
-            <div>
-                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                    <?php
-                        $query = [
-                            'action' => 'admin-products',
-                            'keyword' => $keyword,
-                            'filter_category' => $category,
-                            'filter_status' => $status,
-                            'page' => $i,
-                        ];
-                        $query = array_filter($query, static function ($value) {
-                            return $value !== '' && $value !== null;
-                        });
-                    ?>
-                    <a class="<?= $i === $page ? 'active' : '' ?>" href="<?= BASE_URL ?>?<?= http_build_query($query) ?>">
-                        <?= e($i) ?>
-                    </a>
-                <?php endfor; ?>
+        <?php if ($totalPages > 1): ?>
+            <div class="pagination" style="padding: 20px 24px;">
+                <span>Hiển thị <?= count($products) ?> trên tổng số <?= $totalItems ?> sản phẩm</span>
+                <div class="pagination-links">
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <?php
+                            $query = array_filter([
+                                'action' => 'admin-products',
+                                'keyword' => $keyword,
+                                'danh_muc_id' => $danhMucId,
+                                'noi_nhap_hang_id' => $noiNhapHangId,
+                                'page' => $i,
+                            ]);
+                        ?>
+                        <a href="<?= BASE_URL ?>?<?= http_build_query($query) ?>" class="<?= $i === $page ? 'active' : '' ?>">
+                            <?= $i ?>
+                        </a>
+                    <?php endfor; ?>
+                </div>
             </div>
-        </div>
-    <?php else: ?>
-        <div class="admin-empty-state">
-            Không tìm thấy sản phẩm phù hợp với bộ lọc.
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
+    </div>
 </div>

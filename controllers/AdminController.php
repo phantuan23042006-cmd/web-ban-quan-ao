@@ -3,54 +3,51 @@
 class AdminController
 {
     private $userModel;
+    private $categoryModel;
+    private $supplierModel;
+    private $productModel;
+    private $productDetailModel;
+    private $reviewModel;
 
     public function __construct()
     {
-        $this->userModel = new User();
+        $this->userModel          = new User();
+        $this->categoryModel      = new Category();
+        $this->supplierModel      = new Supplier();
+        $this->productModel       = new Product();
+        $this->productDetailModel = new ProductDetail();
+        $this->reviewModel        = new Review();
+
         $this->requireAdmin();
     }
 
+    private function requireAdmin(): void
+    {
+        if (empty($_SESSION['user']) || ($_SESSION['user']['role'] ?? '') !== 'admin') {
+            header('Location: ' . BASE_URL . '?action=login');
+            exit;
+        }
+    }
+
+    private function generateCsrfToken(): string
+    {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        return $_SESSION['csrf_token'];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD METRICS
+    |--------------------------------------------------------------------------
+    */
     public function index()
     {
         $dashboardMetrics = $this->userModel->getDashboardMetrics();
-        $stats = $dashboardMetrics['stats'] ?? [];
-        $products = $this->userModel->getDashboardProducts();
-        $orders = $this->userModel->getDashboardOrders();
-
-        if ($products === []) {
-            $products = $this->getSampleProducts();
-        }
-
-        if ($orders === []) {
-            $orders = $this->getSampleOrders();
-        }
-
-        $categories = $this->userModel->getDashboardCategories();
-
-        if ($categories === []) {
-            $categories = $this->getCategoryBreakdown($products);
-        }
-
-        $reviews = $this->getDashboardReviews();
-        $recentActivity = $this->getRecentActivity($orders);
-
-        $pendingOrders = (int) ($dashboardMetrics['pending_orders'] ?? 0);
-        $completedOrders = (int) ($dashboardMetrics['completed_orders'] ?? 0);
-        $totalRevenue = (float) ($dashboardMetrics['total_revenue'] ?? 0);
-
-        $overview = [
-            'total_products' => (int) ($dashboardMetrics['total_products'] ?? count($products)),
-            'total_orders' => (int) ($dashboardMetrics['total_orders'] ?? count($orders)),
-            'pending_orders' => $pendingOrders > 0 ? $pendingOrders : 0,
-            'completed_orders' => $completedOrders > 0 ? $completedOrders : 0,
-            'total_revenue' => $totalRevenue,
-        ];
-
-        $categoryCount = count($categories);
-        $reviewAverage = !empty($reviews)
-            ? round(array_sum(array_column($reviews, 'rating')) / count($reviews), 1)
-            : 0;
-        $reviewCount = count($reviews);
+        $products = $this->productModel->getAllAdmin([], 1, 5)['items'] ?? [];
+        $categories = $this->categoryModel->getAll();
 
         $title = 'Dashboard Admin';
         $view = 'admin/dashboard';
@@ -60,632 +57,735 @@ class AdminController
         require PATH_VIEW_MAIN;
     }
 
-    public function products()
+    /*
+    |--------------------------------------------------------------------------
+    | QUẢN LÝ DANH MỤC (CATEGORY CRUD)
+    |--------------------------------------------------------------------------
+    */
+    public function categories()
     {
         $keyword = trim($_GET['keyword'] ?? '');
-        $category = trim($_GET['filter_category'] ?? '');
-        $status = trim($_GET['filter_status'] ?? '');
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = 10;
+        $categories = $this->categoryModel->getAll($keyword);
 
-        $allProducts = $this->getSampleProducts();
-        $products = [];
+        $editId = (int) ($_GET['edit'] ?? 0);
+        $editCategory = $editId > 0 ? $this->categoryModel->findById($editId) : null;
 
-        foreach ($allProducts as $product) {
-            if ($keyword !== '' &&
-                stripos($product['name'], $keyword) === false &&
-                stripos($product['category'], $keyword) === false
-            ) {
-                continue;
-            }
+        $title = 'Quản lý danh mục';
+        $view = 'admin/categories';
+        $layout = 'admin';
 
-            if ($category !== '' && $product['category'] !== $category) {
-                continue;
-            }
+        require PATH_VIEW_MAIN;
+    }
 
-            if ($status !== '' && $product['status'] !== $status) {
-                continue;
-            }
-
-            $products[] = $product;
+    public function storeCategory()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
         }
 
-        $totalItems = count($products);
-        $totalPages = max(1, (int) ceil($totalItems / $perPage));
+        $name = trim($_POST['name'] ?? '');
 
-        if ($page > $totalPages) {
-            $page = $totalPages;
+        if ($name === '') {
+            $_SESSION['error_message'] = 'Tên danh mục không được để trống.';
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
         }
 
-        $products = array_slice(
-            $products,
-            ($page - 1) * $perPage,
-            $perPage
-        );
+        if ($this->categoryModel->nameExists($name)) {
+            $_SESSION['error_message'] = "Danh mục '{$name}' đã tồn tại.";
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
+        }
 
-        $categories = array_unique(
-            array_column($allProducts, 'category')
-        );
+        try {
+            $this->categoryModel->create($name);
+            $_SESSION['success_message'] = "Thêm danh mục '{$name}' thành công.";
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Đã có lỗi xảy ra khi tạo danh mục: ' . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=admin-categories');
+        exit;
+    }
+
+    public function updateCategory()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+
+        if ($id <= 0 || $name === '') {
+            $_SESSION['error_message'] = 'Dữ liệu danh mục không hợp lệ.';
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
+        }
+
+        if ($this->categoryModel->nameExists($name, $id)) {
+            $_SESSION['error_message'] = "Tên danh mục '{$name}' đã bị trùng.";
+            header('Location: ' . BASE_URL . '?action=admin-categories&edit=' . $id);
+            exit;
+        }
+
+        try {
+            $this->categoryModel->update($id, $name);
+            $_SESSION['success_message'] = "Cập nhật danh mục thành công.";
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Không thể cập nhật danh mục: ' . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=admin-categories');
+        exit;
+    }
+
+    public function deleteCategory()
+    {
+        $id = (int) ($_GET['id'] ?? 0);
+
+        if ($id <= 0) {
+            $_SESSION['error_message'] = 'Danh mục không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
+        }
+
+        if ($this->categoryModel->hasProducts($id)) {
+            $_SESSION['error_message'] = 'Không thể xóa danh mục này vì đang có sản phẩm thuộc danh mục!';
+            header('Location: ' . BASE_URL . '?action=admin-categories');
+            exit;
+        }
+
+        try {
+            $this->categoryModel->delete($id);
+            $_SESSION['success_message'] = 'Xóa danh mục thành công.';
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Xóa danh mục thất bại: ' . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=admin-categories');
+        exit;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | QUẢN LÝ NƠI NHẬP HÀNG (SUPPLIER CRUD)
+    |--------------------------------------------------------------------------
+    */
+    public function suppliers()
+    {
+        $keyword = trim($_GET['keyword'] ?? '');
+        $suppliers = $this->supplierModel->getAll($keyword);
+
+        $editId = (int) ($_GET['edit'] ?? 0);
+        $editSupplier = $editId > 0 ? $this->supplierModel->findById($editId) : null;
+
+        $title = 'Quản lý nơi nhập hàng';
+        $view = 'admin/suppliers';
+        $layout = 'admin';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function supplierDetail()
+    {
+        $id = (int) ($_GET['id'] ?? 0);
+        $supplier = $this->supplierModel->findById($id);
+
+        if (!$supplier) {
+            $_SESSION['error_message'] = 'Nơi nhập hàng không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        $products = $this->supplierModel->getProducts($id);
+
+        $title = 'Chi tiết nơi nhập hàng: ' . $supplier['name'];
+        $view = 'admin/supplier_detail';
+        $layout = 'admin';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function storeSupplier()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $phone = trim($_POST['so_dien_thoai'] ?? '');
+
+        if ($name === '') {
+            $_SESSION['error_message'] = 'Tên nơi nhập hàng không được để trống.';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        if ($this->supplierModel->nameExists($name)) {
+            $_SESSION['error_message'] = "Nơi nhập hàng '{$name}' đã tồn tại.";
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        if ($phone !== '' && !preg_match('/^[0-9\+\-\s\.\(\)]{8,20}$/', $phone)) {
+            $_SESSION['error_message'] = 'Số điện thoại không hợp lệ (phải từ 8-20 ký tự số/dấu).';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        try {
+            $this->supplierModel->create([
+                'name'          => $name,
+                'dia_chi'       => $_POST['dia_chi'] ?? '',
+                'so_dien_thoai' => $phone,
+                'ghi_chu'       => $_POST['ghi_chu'] ?? '',
+            ]);
+            $_SESSION['success_message'] = "Thêm nơi nhập hàng '{$name}' thành công.";
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Đã có lỗi xảy ra: ' . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=admin-suppliers');
+        exit;
+    }
+
+    public function updateSupplier()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $phone = trim($_POST['so_dien_thoai'] ?? '');
+
+        if ($id <= 0 || $name === '') {
+            $_SESSION['error_message'] = 'Tên nơi nhập hàng không được để trống.';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers&edit=' . $id);
+            exit;
+        }
+
+        if ($this->supplierModel->nameExists($name, $id)) {
+            $_SESSION['error_message'] = "Tên nơi nhập hàng '{$name}' đã bị trùng.";
+            header('Location: ' . BASE_URL . '?action=admin-suppliers&edit=' . $id);
+            exit;
+        }
+
+        if ($phone !== '' && !preg_match('/^[0-9\+\-\s\.\(\)]{8,20}$/', $phone)) {
+            $_SESSION['error_message'] = 'Số điện thoại không hợp lệ (phải từ 8-20 ký tự số/dấu).';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers&edit=' . $id);
+            exit;
+        }
+
+        try {
+            $this->supplierModel->update($id, [
+                'name'          => $name,
+                'dia_chi'       => $_POST['dia_chi'] ?? '',
+                'so_dien_thoai' => $phone,
+                'ghi_chu'       => $_POST['ghi_chu'] ?? '',
+            ]);
+            $_SESSION['success_message'] = 'Cập nhật nơi nhập hàng thành công.';
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Lỗi cập nhật: ' . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=admin-suppliers');
+        exit;
+    }
+
+    public function deleteSupplier()
+    {
+        $id = (int) ($_GET['id'] ?? 0);
+
+        if ($id <= 0) {
+            $_SESSION['error_message'] = 'Nơi nhập hàng không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        if ($this->supplierModel->hasProducts($id)) {
+            $_SESSION['error_message'] = 'Không thể xóa nơi nhập hàng này vì đang có sản phẩm sử dụng.';
+            header('Location: ' . BASE_URL . '?action=admin-suppliers');
+            exit;
+        }
+
+        try {
+            $this->supplierModel->delete($id);
+            $_SESSION['success_message'] = 'Xóa nơi nhập hàng thành công.';
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Lỗi khi xóa: ' . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=admin-suppliers');
+        exit;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | QUẢN LÝ SẢN PHẨM & BIẾN THỂ SIZE (PRODUCT CRUD)
+    |--------------------------------------------------------------------------
+    */
+    public function products()
+    {
+        $keyword       = trim($_GET['keyword'] ?? '');
+        $danhMucId     = trim($_GET['danh_muc_id'] ?? '');
+        $noiNhapHangId = trim($_GET['noi_nhap_hang_id'] ?? '');
+        $page          = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage       = 10;
+
+        $filters = [
+            'keyword'          => $keyword,
+            'danh_muc_id'      => $danhMucId,
+            'noi_nhap_hang_id' => $noiNhapHangId,
+        ];
+
+        $productData = $this->productModel->getAllAdmin($filters, $page, $perPage);
+
+        $products   = $productData['items'];
+        $totalItems = $productData['total_items'];
+        $totalPages = $productData['total_pages'];
+
+        $categories = $this->categoryModel->getAll();
+        $suppliers  = $this->supplierModel->getAll();
 
         $title = 'Quản lý sản phẩm';
         $view = 'admin/products';
         $layout = 'admin';
-        $csrfToken = $this->generateCsrfToken();
 
         require PATH_VIEW_MAIN;
     }
 
-    public function orders()
+    public function createProduct()
     {
-        $keyword = trim($_GET['keyword'] ?? '');
-        $status = trim($_GET['filter_status'] ?? '');
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = 10;
+        $categories = $this->categoryModel->getAll();
+        $suppliers  = $this->supplierModel->getAll();
 
-        $allOrders = $this->getSampleOrders();
-        $orders = [];
-
-        foreach ($allOrders as $order) {
-            if ($keyword !== '' &&
-                stripos($order['id'], $keyword) === false &&
-                stripos($order['customer'], $keyword) === false
-            ) {
-                continue;
-            }
-
-            if ($status !== '' && $order['status'] !== $status) {
-                continue;
-            }
-
-            $orders[] = $order;
-        }
-
-        $totalItems = count($orders);
-        $totalPages = max(1, (int) ceil($totalItems / $perPage));
-
-        if ($page > $totalPages) {
-            $page = $totalPages;
-        }
-
-        $orders = array_slice(
-            $orders,
-            ($page - 1) * $perPage,
-            $perPage
-        );
-
-        $title = 'Quản lý đơn hàng';
-        $view = 'admin/orders';
-        $layout = 'admin';
-        $csrfToken = $this->generateCsrfToken();
-
-        require PATH_VIEW_MAIN;
-    }
-
-    public function categories()
-    {
-        $title = 'Quản lý danh mục';
-        $view = 'admin/categories';
-        $layout = 'admin';
-        $csrfToken = $this->generateCsrfToken();
-
-        require PATH_VIEW_MAIN;
-    }
-
-    public function reviews()
-    {
-        $title = 'Quản lý đánh giá';
-        $view = 'admin/reviews';
-        $layout = 'admin';
-        $csrfToken = $this->generateCsrfToken();
-
-        require PATH_VIEW_MAIN;
-    }
-
-    public function statistics()
-    {
-        $dashboardMetrics = $this->userModel->getDashboardMetrics();
-        $stats = $dashboardMetrics['stats'] ?? [];
-        $totalProducts = (int) ($dashboardMetrics['total_products'] ?? 0);
-        $totalOrders = (int) ($dashboardMetrics['total_orders'] ?? 0);
-        $totalRevenue = (float) ($dashboardMetrics['total_revenue'] ?? 0);
-        $pendingOrders = (int) ($dashboardMetrics['pending_orders'] ?? 0);
-        $completedOrders = (int) ($dashboardMetrics['completed_orders'] ?? 0);
-
-        $title = 'Thống kê bán hàng';
-        $view = 'admin/statistics';
-        $layout = 'admin';
-        $csrfToken = $this->generateCsrfToken();
-
-        require PATH_VIEW_MAIN;
-    }
-
-    private function getDashboardStats(): array
-    {
-        try {
-            $stats = $this->userModel->getUserStatistics();
-        } catch (Throwable $exception) {
-            $stats = [];
-        }
-
-        return [
-            'total_users' => (int) ($stats['total_users'] ?? 0),
-            'active_users' => (int) ($stats['active_users'] ?? 0),
-            'blocked_users' => (int) ($stats['blocked_users'] ?? 0),
-            'total_admins' => (int) ($stats['total_admins'] ?? 0),
-            'total_members' => (int) ($stats['total_members'] ?? 0),
-        ];
-    }
-
-    private function getCategoryBreakdown(array $products): array
-    {
-        $grouped = [];
-
-        foreach ($products as $product) {
-            $category = trim((string) ($product['category'] ?? 'Khác'));
-            $category = $category !== '' ? $category : 'Khác';
-            $grouped[$category] = ($grouped[$category] ?? 0) + 1;
-        }
-
-        if ($grouped === []) {
-            return [];
-        }
-
-        $maxCount = max(array_values($grouped));
-        $result = [];
-
-        foreach ($grouped as $name => $count) {
-            $result[] = [
-                'name' => $name,
-                'count' => $count,
-                'percent' => $maxCount > 0 ? (int) round(($count / $maxCount) * 100) : 0,
-            ];
-        }
-
-        usort($result, static function ($first, $second) {
-            return $second['count'] <=> $first['count'];
-        });
-
-        return $result;
-    }
-
-    private function getDashboardReviews(): array
-    {
-        $rows = $this->userModel->getDashboardReviewRows();
-
-        if (!empty($rows)) {
-            $reviews = [];
-
-            foreach ($rows as $row) {
-                $reviews[] = [
-                    'customer' => $this->userModel->getFirstValue($row, ['customer', 'customer_name', 'full_name', 'author', 'name']),
-                    'rating' => (int) $this->userModel->getFirstValue($row, ['rating', 'rate', 'stars']),
-                    'comment' => $this->userModel->getFirstValue($row, ['comment', 'content', 'review', 'message']),
-                ];
-            }
-
-            $reviews = array_filter($reviews, static function ($review) {
-                return !empty($review['comment']) || !empty($review['customer']);
-            });
-
-            if (!empty($reviews)) {
-                return $reviews;
-            }
-        }
-
-        return [
-            [
-                'customer' => 'Nguyễn Văn A',
-                'rating' => 5,
-                'comment' => 'Giao hàng nhanh và chất lượng sản phẩm rất tốt.',
-            ],
-            [
-                'customer' => 'Trần Thị B',
-                'rating' => 4,
-                'comment' => 'Mẫu mã đẹp, đổi trả thuận tiện.',
-            ],
-            [
-                'customer' => 'Lê Minh C',
-                'rating' => 5,
-                'comment' => 'Nhân viên hỗ trợ rất nhiệt tình.',
-            ],
-        ];
-    }
-
-    private function getRecentActivity(array $orders): array
-    {
-        $activity = [];
-
-        foreach ($orders as $order) {
-            $status = (string) ($order['status'] ?? 'Đang cập nhật');
-            $activity[] = [
-                'title' => 'Đơn hàng ' . ($order['id'] ?? 'N/A') . ' - ' . $status,
-                'meta' => 'Khách hàng ' . ($order['customer'] ?? 'N/A'),
-                'time' => (string) ($order['date'] ?? ''),
-            ];
-        }
-
-        return array_slice($activity, 0, 4);
-    }
-
-    private function getSampleProducts()
-    {
-        return [
-            [
-                'name' => 'Áo khoác denim oversize',
-                'category' => 'Áo khoác',
-                'price' => '590.000đ',
-                'stock' => '25',
-                'status' => 'active',
-                'created_at' => '01/08/2026',
-            ],
-            [
-                'name' => 'Áo thun basic cổ tròn',
-                'category' => 'Áo thun',
-                'price' => '249.000đ',
-                'stock' => '40',
-                'status' => 'active',
-                'created_at' => '03/08/2026',
-            ],
-            [
-                'name' => 'Váy nữ dáng dài',
-                'category' => 'Váy',
-                'price' => '459.000đ',
-                'stock' => '18',
-                'status' => 'inactive',
-                'created_at' => '28/07/2026',
-            ],
-            [
-                'name' => 'Quần jean ống rộng',
-                'category' => 'Quần',
-                'price' => '389.000đ',
-                'stock' => '32',
-                'status' => 'active',
-                'created_at' => '06/08/2026',
-            ],
-            [
-                'name' => 'Túi tote canvas',
-                'category' => 'Phụ kiện',
-                'price' => '219.000đ',
-                'stock' => '12',
-                'status' => 'active',
-                'created_at' => '10/08/2026',
-            ],
-        ];
-    }
-
-    private function getSampleOrders()
-    {
-        return [
-            [
-                'id' => 'DH-1001',
-                'customer' => 'Nguyễn Văn A',
-                'date' => '01/08/2026',
-                'status' => 'Đã giao',
-                'total' => '598.000đ',
-            ],
-            [
-                'id' => 'DH-1002',
-                'customer' => 'Trần Thị B',
-                'date' => '05/08/2026',
-                'status' => 'Đang giao',
-                'total' => '249.000đ',
-            ],
-            [
-                'id' => 'DH-1003',
-                'customer' => 'Lê Minh C',
-                'date' => '08/08/2026',
-                'status' => 'Chờ xử lý',
-                'total' => '1.290.000đ',
-            ],
-            [
-                'id' => 'DH-1004',
-                'customer' => 'Phạm Thị D',
-                'date' => '10/08/2026',
-                'status' => 'Bị hủy',
-                'total' => '329.000đ',
-            ],
-        ];
-    }
-
-    public function users()
-    {
-        $keyword = trim($_GET['keyword'] ?? '');
-        $role = trim($_GET['filter_role'] ?? '');
-        $status = trim($_GET['filter_status'] ?? '');
-
-        if (!in_array($role, ['', 'user', 'admin'], true)) {
-            $role = '';
-        }
-
-        if (!in_array($status, ['', 'active', 'blocked'], true)) {
-            $status = '';
-        }
-
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = 10;
-
-        $filters = [
-            'keyword' => $keyword,
-            'role' => $role,
-            'status' => $status,
-        ];
-
-        $totalItems = $this->userModel->countUsersForAdmin($filters);
-        $totalPages = max(1, (int) ceil($totalItems / $perPage));
-
-        if ($page > $totalPages) {
-            $page = $totalPages;
-        }
-
-        $users = $this->userModel->getUsersForAdmin($filters, $page, $perPage);
-        $stats = $this->userModel->getUserStatistics();
-
-        $pagination = [
-            'page' => $page,
-            'per_page' => $perPage,
-            'total_items' => $totalItems,
-            'total_pages' => $totalPages,
-            'from' => $totalItems > 0 ? (($page - 1) * $perPage) + 1 : 0,
-            'to' => min($page * $perPage, $totalItems),
-        ];
-
-        $title = 'Quản lý tài khoản';
-        $view = 'admin/users';
+        $title = 'Thêm sản phẩm mới';
+        $view = 'admin/product_form';
         $layout = 'admin';
 
-        $csrfToken = $this->generateCsrfToken();
-        $successMessage = $_SESSION['admin_success'] ?? null;
-        $errorMessage = $_SESSION['admin_error'] ?? null;
-        $resetPasswordInfo = $_SESSION['admin_reset_password'] ?? null;
-
-        unset(
-            $_SESSION['admin_success'],
-            $_SESSION['admin_error'],
-            $_SESSION['admin_reset_password']
-        );
-
         require PATH_VIEW_MAIN;
     }
 
-    public function updateUserStatus()
+    public function storeProduct()
     {
-        $this->requirePostRequest();
-        $this->requireValidCsrf();
-
-        $userId = (int) ($_POST['user_id'] ?? 0);
-        $status = trim($_POST['status'] ?? '');
-
-        if ($userId <= 0 || !in_array($status, ['active', 'blocked'], true)) {
-            $_SESSION['admin_error'] = 'Thông tin cập nhật trạng thái không hợp lệ.';
-            $this->redirectUsersWithFilters();
-        }
-
-        $currentAdminId = (int) ($_SESSION['user']['id'] ?? 0);
-
-        if ($userId === $currentAdminId && $status === 'blocked') {
-            $_SESSION['admin_error'] = 'Bạn không thể tự khóa tài khoản đang đăng nhập.';
-            $this->redirectUsersWithFilters();
-        }
-
-        $targetUser = $this->userModel->findById($userId);
-
-        if (!$targetUser) {
-            $_SESSION['admin_error'] = 'Không tìm thấy tài khoản cần cập nhật.';
-            $this->redirectUsersWithFilters();
-        }
-
-        if (($targetUser['status'] ?? '') === $status) {
-            $_SESSION['admin_error'] = 'Tài khoản đã ở trạng thái này.';
-            $this->redirectUsersWithFilters();
-        }
-
-        try {
-            $updated = $this->userModel->updateStatus($userId, $status);
-
-            if (!$updated) {
-                throw new Exception('Không thể cập nhật trạng thái.');
-            }
-
-            $_SESSION['admin_success'] = $status === 'active'
-                ? 'Đã mở khóa tài khoản thành công.'
-                : 'Đã khóa tài khoản thành công.';
-        } catch (Throwable $exception) {
-            $_SESSION['admin_error'] = 'Không thể cập nhật trạng thái tài khoản.';
-        }
-
-        $this->redirectUsersWithFilters();
-    }
-
-    public function updateUserRole()
-    {
-        $this->requirePostRequest();
-        $this->requireValidCsrf();
-
-        $userId = (int) ($_POST['user_id'] ?? 0);
-        $role = trim($_POST['role'] ?? '');
-
-        if ($userId <= 0 || !in_array($role, ['user', 'admin'], true)) {
-            $_SESSION['admin_error'] = 'Thông tin phân quyền không hợp lệ.';
-            $this->redirectUsersWithFilters();
-        }
-
-        $currentAdminId = (int) ($_SESSION['user']['id'] ?? 0);
-
-        if ($userId === $currentAdminId && $role === 'user') {
-            $_SESSION['admin_error'] = 'Bạn không thể tự hạ quyền tài khoản đang đăng nhập.';
-            $this->redirectUsersWithFilters();
-        }
-
-        $targetUser = $this->userModel->findById($userId);
-
-        if (!$targetUser) {
-            $_SESSION['admin_error'] = 'Không tìm thấy tài khoản cần phân quyền.';
-            $this->redirectUsersWithFilters();
-        }
-
-        if (($targetUser['role'] ?? '') === $role) {
-            $_SESSION['admin_error'] = 'Tài khoản đã có quyền này.';
-            $this->redirectUsersWithFilters();
-        }
-
-        try {
-            $updated = $this->userModel->updateRole($userId, $role);
-
-            if (!$updated) {
-                throw new Exception('Không thể cập nhật quyền.');
-            }
-
-            $_SESSION['admin_success'] = $role === 'admin'
-                ? 'Đã cấp quyền quản trị viên.'
-                : 'Đã chuyển tài khoản về quyền khách hàng.';
-        } catch (Throwable $exception) {
-            $_SESSION['admin_error'] = 'Không thể cập nhật quyền tài khoản.';
-        }
-
-        $this->redirectUsersWithFilters();
-    }
-
-    public function resetUserPassword()
-    {
-        $this->requirePostRequest();
-        $this->requireValidCsrf();
-
-        $userId = (int) ($_POST['user_id'] ?? 0);
-
-        if ($userId <= 0) {
-            $_SESSION['admin_error'] = 'Tài khoản cần đặt lại mật khẩu không hợp lệ.';
-            $this->redirectUsersWithFilters();
-        }
-
-        $targetUser = $this->userModel->findById($userId);
-
-        if (!$targetUser) {
-            $_SESSION['admin_error'] = 'Không tìm thấy tài khoản.';
-            $this->redirectUsersWithFilters();
-        }
-
-        try {
-            $newPassword = 'Fs@' . strtoupper(bin2hex(random_bytes(4)));
-            $updated = $this->userModel->updatePassword($userId, $newPassword);
-
-            if (!$updated) {
-                throw new Exception('Không thể đặt lại mật khẩu.');
-            }
-
-            $_SESSION['admin_success'] = 'Đã đặt lại mật khẩu thành công.';
-            $_SESSION['admin_reset_password'] = [
-                'full_name' => $targetUser['full_name'],
-                'email' => $targetUser['email'],
-                'password' => $newPassword,
-            ];
-        } catch (Throwable $exception) {
-            $_SESSION['admin_error'] = 'Không thể đặt lại mật khẩu tài khoản.';
-        }
-
-        $this->redirectUsersWithFilters();
-    }
-
-    private function requireAdmin()
-    {
-        if (empty($_SESSION['user'])) {
-            $_SESSION['login_errors'] = [
-                'general' => 'Vui lòng đăng nhập để tiếp tục.',
-            ];
-
-            $this->redirect('login');
-        }
-
-        if (($_SESSION['user']['role'] ?? '') !== 'admin') {
-            http_response_code(403);
-
-            $title = 'Không có quyền truy cập';
-            $view = 'errors/403';
-            $layout = 'user';
-
-            require PATH_VIEW_MAIN;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=admin-products');
             exit;
         }
 
-        if (($_SESSION['user']['status'] ?? '') !== 'active') {
-            $_SESSION = [];
-            session_destroy();
-            session_start();
+        $name          = trim($_POST['name'] ?? '');
+        $danhMucId     = (int) ($_POST['danh_muc_id'] ?? 0);
+        $noiNhapHangId = (int) ($_POST['noi_nhap_hang_id'] ?? 0);
+        $gioiThieu     = trim($_POST['gioi_thieu'] ?? '');
+        $rawVariants   = $_POST['variants'] ?? [];
 
-            $_SESSION['login_errors'] = [
-                'general' => 'Tài khoản của bạn đã bị khóa.',
-            ];
+        if ($name === '' || $danhMucId <= 0 || $noiNhapHangId <= 0) {
+            $_SESSION['error_message'] = 'Vui lòng điền đầy đủ Tên sản phẩm, Danh mục và Nơi nhập hàng.';
+            header('Location: ' . BASE_URL . '?action=admin-product-create');
+            exit;
+        }
 
-            $this->redirect('login');
+        // Upload ảnh nếu có
+        $imageName = $this->handleImageUpload('anh');
+
+        try {
+            $productId = $this->productModel->createProductWithDetails([
+                'name'             => $name,
+                'gioi_thieu'        => $gioiThieu,
+                'anh'               => $imageName,
+                'danh_muc_id'      => $danhMucId,
+                'noi_nhap_hang_id' => $noiNhapHangId,
+            ], $rawVariants);
+
+            $_SESSION['success_message'] = "Tạo sản phẩm '{$name}' thành công.";
+            header('Location: ' . BASE_URL . '?action=admin-product-detail&id=' . $productId);
+            exit;
+
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Lỗi tạo sản phẩm: ' . $e->getMessage();
+            header('Location: ' . BASE_URL . '?action=admin-product-create');
+            exit;
         }
     }
 
-    private function requirePostRequest()
+    public function editProduct()
     {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            $this->redirect('admin-users');
+        $id = (int) ($_GET['id'] ?? 0);
+        $product = $this->productModel->findById($id);
+
+        if (!$product) {
+            $_SESSION['error_message'] = 'Sản phẩm không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-products');
+            exit;
+        }
+
+        $categories = $this->categoryModel->getAll();
+        $suppliers  = $this->supplierModel->getAll();
+
+        $title = 'Sửa sản phẩm: ' . $product['name'];
+        $view = 'admin/product_form';
+        $layout = 'admin';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function updateProduct()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=admin-products');
+            exit;
+        }
+
+        $id            = (int) ($_POST['id'] ?? 0);
+        $name          = trim($_POST['name'] ?? '');
+        $danhMucId     = (int) ($_POST['danh_muc_id'] ?? 0);
+        $noiNhapHangId = (int) ($_POST['noi_nhap_hang_id'] ?? 0);
+        $gioiThieu     = trim($_POST['gioi_thieu'] ?? '');
+        $rawVariants   = $_POST['variants'] ?? null;
+
+        $existingProduct = $this->productModel->findById($id);
+
+        if (!$existingProduct || $name === '' || $danhMucId <= 0 || $noiNhapHangId <= 0) {
+            $_SESSION['error_message'] = 'Dữ liệu sản phẩm không hợp lệ.';
+            header('Location: ' . BASE_URL . '?action=admin-products');
+            exit;
+        }
+
+        // Upload ảnh mới nếu người dùng chọn
+        $newImage = $this->handleImageUpload('anh');
+        $imageName = $newImage !== null ? $newImage : $existingProduct['anh'];
+
+        try {
+            $this->productModel->updateProductWithDetails($id, [
+                'name'             => $name,
+                'gioi_thieu'        => $gioiThieu,
+                'anh'               => $imageName,
+                'danh_muc_id'      => $danhMucId,
+                'noi_nhap_hang_id' => $noiNhapHangId,
+            ], $rawVariants);
+
+            $_SESSION['success_message'] = "Cập nhật sản phẩm '{$name}' thành công.";
+            header('Location: ' . BASE_URL . '?action=admin-product-detail&id=' . $id);
+            exit;
+
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Lỗi cập nhật sản phẩm: ' . $e->getMessage();
+            header('Location: ' . BASE_URL . '?action=admin-product-edit&id=' . $id);
+            exit;
         }
     }
 
-    private function requireValidCsrf()
+    public function productDetail()
     {
-        $token = $_POST['csrf_token'] ?? '';
+        $id = (int) ($_GET['id'] ?? 0);
+        $product = $this->productModel->findById($id);
 
-        if (!$this->validateCsrfToken($token)) {
-            $_SESSION['admin_error'] = 'Phiên thao tác không hợp lệ. Vui lòng thử lại.';
-            $this->redirectUsersWithFilters();
+        if (!$product) {
+            $_SESSION['error_message'] = 'Sản phẩm không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-products');
+            exit;
         }
+
+        $reviews = $this->reviewModel->getByProductId($id);
+        $ratingInfo = $this->reviewModel->getAverageRating($id);
+
+        $title = 'Chi tiết sản phẩm: ' . $product['name'];
+        $view = 'admin/product_detail';
+        $layout = 'admin';
+
+        require PATH_VIEW_MAIN;
     }
 
-    private function generateCsrfToken()
+    public function deleteProduct()
     {
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $id = (int) ($_GET['id'] ?? 0);
+
+        if ($id <= 0) {
+            $_SESSION['error_message'] = 'Sản phẩm không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-products');
+            exit;
         }
 
-        return $_SESSION['csrf_token'];
-    }
-
-    private function validateCsrfToken($token)
-    {
-        if (empty($token) || empty($_SESSION['csrf_token'])) {
-            return false;
+        try {
+            $this->productModel->deleteProduct($id);
+            $_SESSION['success_message'] = 'Xóa sản phẩm và dữ liệu liên quan thành công.';
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Không thể xóa sản phẩm: ' . $e->getMessage();
         }
 
-        return hash_equals($_SESSION['csrf_token'], $token);
-    }
-
-    private function redirectUsersWithFilters()
-    {
-        $params = ['action' => 'admin-users'];
-
-        $keyword = trim($_POST['return_keyword'] ?? '');
-        $role = trim($_POST['return_role'] ?? '');
-        $status = trim($_POST['return_status'] ?? '');
-        $page = max(1, (int) ($_POST['return_page'] ?? 1));
-
-        if ($keyword !== '') {
-            $params['keyword'] = $keyword;
-        }
-
-        if (in_array($role, ['user', 'admin'], true)) {
-            $params['filter_role'] = $role;
-        }
-
-        if (in_array($status, ['active', 'blocked'], true)) {
-            $params['filter_status'] = $status;
-        }
-
-        if ($page > 1) {
-            $params['page'] = $page;
-        }
-
-        header('Location: ' . BASE_URL . '?' . http_build_query($params));
+        header('Location: ' . BASE_URL . '?action=admin-products');
         exit;
     }
 
-    private function redirect($action)
+    /*
+    |--------------------------------------------------------------------------
+    | QUẢN LÝ ĐÁNH GIÁ (REVIEWS CRUD)
+    |--------------------------------------------------------------------------
+    */
+    public function reviews()
     {
-        header('Location: ' . BASE_URL . '?action=' . urlencode($action));
+        $keyword         = trim($_GET['keyword'] ?? '');
+        $selectedProduct = trim($_GET['san_pham_id'] ?? '');
+        $selectedStars   = trim($_GET['so_sao'] ?? '');
+        $page            = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage         = 10;
+
+        $filters = [
+            'keyword'     => $keyword,
+            'san_pham_id' => $selectedProduct,
+            'so_sao'      => $selectedStars,
+        ];
+
+        $reviewData = $this->reviewModel->getAllAdmin($filters, $page, $perPage);
+
+        $reviews    = $reviewData['items'];
+        $totalItems = $reviewData['total_items'];
+        $totalPages = $reviewData['total_pages'];
+
+        $products = $this->productModel->getAllAdmin([], 1, 1000)['items'] ?? [];
+
+        $title = 'Quản lý đánh giá';
+        $view = 'admin/reviews';
+        $layout = 'admin';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function deleteReview()
+    {
+        $id = (int) ($_GET['id'] ?? 0);
+        $redirectProduct = (int) ($_GET['redirect_product'] ?? 0);
+
+        if ($id <= 0) {
+            $_SESSION['error_message'] = 'Đánh giá không tồn tại.';
+            header('Location: ' . BASE_URL . '?action=admin-reviews');
+            exit;
+        }
+
+        try {
+            $this->reviewModel->delete($id);
+            $_SESSION['success_message'] = 'Đã xóa đánh giá thành công.';
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Không thể xóa đánh giá: ' . $e->getMessage();
+        }
+
+        if ($redirectProduct > 0) {
+            header('Location: ' . BASE_URL . '?action=admin-product-detail&id=' . $redirectProduct);
+        } else {
+            header('Location: ' . BASE_URL . '?action=admin-reviews');
+        }
         exit;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | XỬ LÝ UPLOAD ANH
+    |--------------------------------------------------------------------------
+    */
+    private function handleImageUpload($field = 'anh'): ?string
+    {
+        if (empty($_FILES[$field]) || $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $file = $_FILES[$field];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        if (!in_array($ext, $allowedExts, true)) {
+            throw new Exception("Định dạng file ảnh không hợp lệ. Chỉ chấp nhận JPG, PNG, WEBP, GIF.");
+        }
+
+        if (!is_dir(PATH_ASSETS_UPLOADS)) {
+            mkdir(PATH_ASSETS_UPLOADS, 0777, true);
+        }
+
+        $newFileName = 'prod_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $targetPath = PATH_ASSETS_UPLOADS . $newFileName;
+
+        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            return $newFileName;
+        }
+
+        return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MẸO GIỮ CÁC METHOD HIỆN CÓ CỦA ADMINCONTROLLER
+    |--------------------------------------------------------------------------
+    */
+    public function orders()
+{
+    $title = 'Quản lý đơn hàng';
+    $view = 'admin/orders';
+    $layout = 'admin';
+
+    require PATH_VIEW_MAIN;
+}
+
+/*
+|--------------------------------------------------------------------------
+| QUẢN LÝ TÀI KHOẢN
+|--------------------------------------------------------------------------
+*/
+public function users()
+{
+    $filters = [
+        'keyword' => trim($_GET['keyword'] ?? ''),
+        'role'    => trim($_GET['filter_role'] ?? ''),
+        'status'  => trim($_GET['filter_status'] ?? ''),
+    ];
+
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage = 10;
+
+    $users = $this->userModel->getUsersForAdmin(
+        $filters,
+        $page,
+        $perPage
+    );
+
+    $totalUsers = $this->userModel->countUsersForAdmin($filters);
+    $totalPages = max(1, (int) ceil($totalUsers / $perPage));
+
+    $statistics = $this->userModel->getUserStatistics();
+
+    // Thông báo từ các thao tác quản lý tài khoản
+    $successMessage = $_SESSION['success_message'] ?? null;
+    $errorMessage = $_SESSION['error_message'] ?? null;
+    $resetPasswordInfo = $_SESSION['reset_password_info'] ?? null;
+
+    // Xóa thông báo sau khi lấy ra
+    unset($_SESSION['success_message']);
+    unset($_SESSION['error_message']);
+    unset($_SESSION['reset_password_info']);
+
+    // Dữ liệu phân trang mà users.php đang sử dụng
+    $pagination = [
+        'page'        => $page,
+        'per_page'    => $perPage,
+        'total_items' => $totalUsers,
+        'total_pages' => $totalPages,
+        'from'        => $totalUsers > 0
+            ? (($page - 1) * $perPage) + 1
+            : 0,
+        'to'          => min($page * $perPage, $totalUsers),
+    ];
+
+    // users.php đang dùng các tên này
+    $stats = [
+        'total_users'   => $statistics['total_users'] ?? 0,
+        'active_users'  => $statistics['active_users'] ?? 0,
+        'blocked_users' => $statistics['blocked_users'] ?? 0,
+        'admin_users'   => $statistics['total_admins'] ?? 0,
+    ];
+
+    // Các biến filter để users.php sử dụng
+    $keyword = $filters['keyword'];
+    $role = $filters['role'];
+    $status = $filters['status'];
+
+    $csrfToken = $this->generateCsrfToken();
+
+    $title = 'Quản lý tài khoản';
+    $view = 'admin/users';
+    $layout = 'admin';
+
+    require PATH_VIEW_MAIN;
+}
+
+/*
+|--------------------------------------------------------------------------
+| RESET MẬT KHẨU TÀI KHOẢN
+|--------------------------------------------------------------------------
+*/
+public function resetUserPassword()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    $userId = (int) ($_POST['user_id'] ?? 0);
+
+    if ($userId <= 0) {
+        $_SESSION['error_message'] = 'Tài khoản không hợp lệ.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    $user = $this->userModel->findById($userId);
+
+    if (!$user) {
+        $_SESSION['error_message'] = 'Không tìm thấy tài khoản cần reset mật khẩu.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    /*
+     * Tạo mật khẩu tạm thời
+     */
+    $newPassword = 'User@' . rand(100000, 999999);
+
+    try {
+        $updated = $this->userModel->updatePassword(
+            $userId,
+            $newPassword
+        );
+
+        if (!$updated) {
+            throw new Exception('Không thể cập nhật mật khẩu.');
+        }
+
+        /*
+         * Lưu thông tin vào SESSION để sau khi redirect
+         * sang trang admin-users vẫn có thể hiển thị.
+         */
+        $_SESSION['success_message'] =
+            'Đã reset mật khẩu cho tài khoản "' .
+            ($user['full_name'] ?? $user['email']) .
+            '" thành công.';
+
+        $_SESSION['reset_password_info'] = [
+            'full_name' => $user['full_name'] ?? '',
+            'email'     => $user['email'] ?? '',
+            'password'  => $newPassword,
+        ];
+
+    } catch (Exception $e) {
+        $_SESSION['error_message'] =
+            'Reset mật khẩu thất bại: ' . $e->getMessage();
+    }
+
+    /*
+     * Giữ lại bộ lọc và trang hiện tại
+     */
+    $query = [
+        'action' => 'admin-users',
+        'keyword' => $_POST['return_keyword'] ?? '',
+        'filter_role' => $_POST['return_role'] ?? '',
+        'filter_status' => $_POST['return_status'] ?? '',
+        'page' => (int) ($_POST['return_page'] ?? 1),
+    ];
+
+    $query = array_filter($query, static function ($value) {
+        return $value !== '' && $value !== null;
+    });
+
+    header(
+        'Location: ' .
+        BASE_URL .
+        '?' .
+        http_build_query($query)
+    );
+
+    exit;
+}
 }
