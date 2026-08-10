@@ -149,6 +149,63 @@ switch ($action) {
         (new HomeController())->products();
         break;
 
+    case 'product-detail':
+        routeRequireLogin();
+
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+
+        (new HomeController())->productDetail();
+        break;
+
+    case 'review-store':
+        routeRequireLogin();
+
+        (new HomeController())->storeReview();
+        break;
+
+    case 'review-update':
+        routeRequireLogin();
+
+        (new HomeController())->updateReview();
+        break;
+
+    case 'review-delete':
+        routeRequireLogin();
+
+        (new HomeController())->deleteReview();
+        break;
+
+    /*
+    |--------------------------------------------------------------------------
+    | GIỎ HÀNG (SHOPPING CART)
+    |--------------------------------------------------------------------------
+    */
+    case 'cart':
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+
+        (new HomeController())->cart();
+        break;
+
+    case 'cart-add':
+        (new HomeController())->addToCart();
+        break;
+
+    case 'cart-update':
+        (new HomeController())->updateCart();
+        break;
+
+    case 'cart-remove':
+        (new HomeController())->removeFromCart();
+        break;
+
+    case 'cart-clear':
+        (new HomeController())->clearCart();
+        break;
+
     case 'categories':
         routeRequireLogin();
 
@@ -196,6 +253,60 @@ switch ($action) {
         (new AdminController())->products();
         break;
 
+    case 'admin-product-create':
+        routeRequireAdmin();
+
+        (new AdminController())->createProduct();
+        break;
+
+    case 'admin-product-store':
+        routeRequireAdmin();
+
+        (new AdminController())->storeProduct();
+        break;
+
+    case 'admin-product-detail':
+        routeRequireAdmin();
+
+        (new AdminController())->productDetail();
+        break;
+
+    case 'admin-product-edit':
+        routeRequireAdmin();
+
+        (new AdminController())->editProduct();
+        break;
+
+    case 'admin-product-update':
+        routeRequireAdmin();
+
+        (new AdminController())->updateProduct();
+        break;
+
+    case 'admin-product-delete':
+        routeRequireAdmin();
+
+        (new AdminController())->deleteProduct();
+        break;
+
+    case 'admin-variant-store':
+        routeRequireAdmin();
+
+        (new AdminController())->storeVariant();
+        break;
+
+    case 'admin-variant-update':
+        routeRequireAdmin();
+
+        (new AdminController())->updateVariant();
+        break;
+
+    case 'admin-variant-delete':
+        routeRequireAdmin();
+
+        (new AdminController())->deleteVariant();
+        break;
+
     case 'admin-orders':
         routeRequireAdmin();
 
@@ -208,10 +319,64 @@ switch ($action) {
         (new AdminController())->categories();
         break;
 
+    case 'admin-category-store':
+        routeRequireAdmin();
+
+        (new AdminController())->storeCategory();
+        break;
+
+    case 'admin-category-update':
+        routeRequireAdmin();
+
+        (new AdminController())->updateCategory();
+        break;
+
+    case 'admin-category-delete':
+        routeRequireAdmin();
+
+        (new AdminController())->deleteCategory();
+        break;
+
+    case 'admin-suppliers':
+        routeRequireAdmin();
+
+        (new AdminController())->suppliers();
+        break;
+
+    case 'admin-supplier-detail':
+        routeRequireAdmin();
+
+        (new AdminController())->supplierDetail();
+        break;
+
+    case 'admin-supplier-store':
+        routeRequireAdmin();
+
+        (new AdminController())->storeSupplier();
+        break;
+
+    case 'admin-supplier-update':
+        routeRequireAdmin();
+
+        (new AdminController())->updateSupplier();
+        break;
+
+    case 'admin-supplier-delete':
+        routeRequireAdmin();
+
+        (new AdminController())->deleteSupplier();
+        break;
+
     case 'admin-reviews':
         routeRequireAdmin();
 
         (new AdminController())->reviews();
+        break;
+
+    case 'admin-review-delete':
+        routeRequireAdmin();
+
+        (new AdminController())->deleteReview();
         break;
 
     case 'admin-statistics':
