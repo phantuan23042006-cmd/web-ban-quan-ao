@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="tshirt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg2)"/>
+  <!-- T-shirt shape -->
+  <path d="M140,110 L90,140 L115,200 L140,185 L140,330 L260,330 L260,185 L285,200 L310,140 L260,110 Q200,145 140,110 Z" fill="url(#tshirt)"/>
+  <!-- Collar curve -->
+  <path d="M165,112 Q200,135 235,112" fill="none" stroke="#ffe4e6" stroke-width="4"/>
+  <!-- Minimalist Graphic -->
+  <circle cx="200" cy="220" r="30" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="6 4"/>
+  <text x="200" y="225" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="bold">BASIC</text>
+  <text x="200" y="375" text-anchor="middle" fill="#fecdd3" font-family="sans-serif" font-size="16" font-weight="bold">Áo Thun Basic Cổ Tròn</text>
+</svg>

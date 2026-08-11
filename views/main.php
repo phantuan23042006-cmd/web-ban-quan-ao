@@ -848,15 +848,135 @@ if (function_exists('mb_substr')) {
                 padding: 18px 12px;
             }
         }
+        /* ─── Storefront tổng quát ─── */
         .storefront { padding-top: 36px; padding-bottom: 56px; }
-        .storefront h1, .storefront h2, .storefront h3 { color: #0f172a; }.profile-panel input,.profile-panel textarea { width:100%; margin-top:6px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font:inherit; }.profile-panel textarea{min-height:72px}.order-table{width:100%;border-collapse:collapse}.order-table th,.order-table td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left}.order-table a{color:#7c3aed;font-weight:700}
-        .storefront-hero { min-height: 390px; display: flex; align-items: center; padding: 56px; border-radius: 28px; color: white; background: linear-gradient(90deg, rgba(15,23,42,.94), rgba(124,58,237,.55)), url('<?= BASE_ASSETS_UPLOADS ?>home-banner.svg') center/cover; }
-        .storefront-hero > div { max-width: 580px; }.storefront-hero h1 { color:white; font-size:clamp(2.3rem,5vw,4rem); margin:10px 0; }.storefront-hero p { font-size:1.1rem; line-height:1.7; }
-        .eyebrow { color:#7c3aed; font-weight:800; letter-spacing:.12em; font-size:.76rem; }.storefront-hero .eyebrow { color:#e9d5ff; }
-        .section-title { display:flex; align-items:end; justify-content:space-between; margin:48px 0 20px; }.section-title h1,.section-title h2 { margin:6px 0 0; }.section-title a { color:#7c3aed; font-weight:700; text-decoration:none; }
-        .category-grid, .product-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }.category-tile,.product-card,.profile-panel { border:1px solid #e2e8f0; border-radius:18px; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.05); }.category-tile { min-height:128px; padding:22px; display:flex; flex-direction:column; gap:8px; text-decoration:none; color:#0f172a; }.category-tile small { color:#64748b; }.category-tile span { color:#7c3aed; font-size:.85rem; font-weight:700; margin-top:auto; }
-        .product-card { overflow:hidden; transition:transform .2s; }.product-card:hover { transform:translateY(-4px); }.product-card a { text-decoration:none; color:inherit; }.product-image { height:230px; display:grid; place-items:center; background:#f1f5f9; color:#64748b; }.product-image img { width:100%; height:100%; object-fit:cover; }.product-info { padding:16px; }.product-info small { color:#7c3aed; font-weight:700; }.product-info h3 { font-size:1rem; min-height:44px; margin:8px 0; }.product-info strong { color:#db2777; }.rating { float:right; color:#a16207; font-size:.85rem; }.catalog-heading { padding:32px; border-radius:20px; color:#fff; background:linear-gradient(135deg,#0f172a,#7c3aed); }.catalog-heading h1 { color:#fff; margin:8px 0; }.catalog-heading .eyebrow { color:#e9d5ff; }.catalog-filter { margin:24px 0; padding:18px; display:flex; gap:10px; flex-wrap:wrap; background:#fff; border:1px solid #e2e8f0; border-radius:16px; }.catalog-filter input,.catalog-filter select { min-height:42px; border:1px solid #cbd5e1; border-radius:10px; padding:0 12px; }.button { display:inline-flex; align-items:center; justify-content:center; border-radius:10px; padding:11px 16px; border:0; text-decoration:none; font-weight:700; cursor:pointer; }.primary { background:linear-gradient(135deg,#7c3aed,#db2777); color:#fff; }.empty { grid-column:1/-1; padding:36px; text-align:center; background:#fff; border-radius:16px; }.profile-panel { padding:28px; }.profile-panel dl { display:grid; grid-template-columns:140px 1fr; gap:14px; }.profile-panel dt { color:#64748b; }.profile-panel dd { margin:0; font-weight:600; }.checkout-grid { display:grid; grid-template-columns:1.5fr 1fr; gap:20px; }.notice { color:#92400e; background:#fffbeb; padding:12px; border-radius:10px; }
-        @media (max-width:900px) { .category-grid,.product-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.checkout-grid { grid-template-columns:1fr; } }.@media (max-width:560px) { .storefront-hero { padding:32px 24px; }.category-grid,.product-grid { grid-template-columns:1fr; }.catalog-filter > * { width:100%; }.profile-panel dl { grid-template-columns:1fr; gap:4px; } }
+        .storefront h1, .storefront h2, .storefront h3 { color: #0f172a; }
+
+        /* ─── Hero banner ─── */
+        .storefront-hero { min-height: 390px; display: flex; align-items: center; padding: 56px; border-radius: 28px; color: white; background: linear-gradient(90deg, rgba(15,23,42,.94), rgba(124,58,237,.55)) no-repeat center/cover; }
+        .storefront-hero > div { max-width: 580px; }
+        .storefront-hero h1 { color: white; font-size: clamp(2.3rem,5vw,4rem); margin: 10px 0; }
+        .storefront-hero p  { font-size: 1.1rem; line-height: 1.7; }
+
+        /* ─── Typography helpers ─── */
+        .eyebrow { color: #7c3aed; font-weight: 800; letter-spacing: .12em; font-size: .76rem; }
+        .storefront-hero .eyebrow { color: #e9d5ff; }
+
+        /* ─── Section titles ─── */
+        .section-title { display: flex; align-items: flex-end; justify-content: space-between; margin: 48px 0 20px; }
+        .section-title h1, .section-title h2 { margin: 6px 0 0; }
+        .section-title a { color: #7c3aed; font-weight: 700; text-decoration: none; }
+
+        /* ─── Grids ─── */
+        .category-grid, .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+
+        /* ─── Cards chung ─── */
+        .category-tile, .product-card, .profile-panel {
+            border: 1px solid #e2e8f0; border-radius: 18px;
+            background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.05);
+        }
+
+        /* ─── Category tile ─── */
+        .category-tile { min-height: 128px; padding: 22px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.05); transition: transform .2s ease; }
+        .category-tile:hover { transform: translateY(-3px); border-color: #cbd5e1; }
+        .category-tile strong { font-size: 1.05rem; color: #0f172a; }
+        .category-tile small { color: #64748b; font-size: .88rem; }
+        .category-tile span  { color: #7c3aed; font-size: .85rem; font-weight: 700; margin-top: auto; }
+
+        /* ─── Product card ─── */
+        .product-card { border: 1px solid #e2e8f0; border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.05); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease; display: flex; flex-direction: column; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(15,23,42,.1); }
+        .product-card a     { text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%; width: 100%; }
+        .product-image      { height: 220px; width: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #64748b; overflow: hidden; position: relative; border-bottom: 1px solid #f1f5f9; }
+        .product-image img  { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .product-info       { padding: 16px; background: #ffffff; flex: 1; display: flex; flex-direction: column; }
+        .product-info small { color: #7c3aed; font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+        .product-info h3    { font-size: .98rem; font-weight: 700; min-height: 42px; margin: 6px 0 10px; color: #0f172a; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-info-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
+        .product-info strong{ color: #db2777; font-size: 1.05rem; font-weight: 800; }
+        .rating             { float: right; color: #a16207; font-size: .85rem; font-weight: 600; }
+
+        /* ─── Catalog / Sản phẩm ─── */
+        .catalog-heading { padding: 32px; border-radius: 20px; color: #fff; background: linear-gradient(135deg,#0f172a,#7c3aed); }
+        .catalog-heading h1 { color: #fff; margin: 8px 0; }
+        .catalog-heading .eyebrow { color: #e9d5ff; }
+        .catalog-filter { margin: 24px 0; padding: 18px; display: flex; gap: 10px; flex-wrap: wrap; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; }
+        .catalog-filter input,
+        .catalog-filter select { min-height: 42px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 12px; }
+
+        /* ─── Buttons ─── */
+        .button  { display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; padding: 11px 16px; border: 0; text-decoration: none; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+        .button:hover { opacity: .88; }
+        .primary { background: linear-gradient(135deg,#7c3aed,#db2777); color: #fff; }
+        .btn-danger { background: #be123c; color: #fff; }
+
+        /* ─── Empty state ─── */
+        .empty { grid-column: 1/-1; padding: 36px; text-align: center; background: #fff; border-radius: 16px; }
+
+        /* ─── Profile panel ─── */
+        .profile-panel { padding: 28px; }
+        .profile-panel h1, .profile-panel h2 { margin: 0 0 20px; font-size: 1.35rem; }
+        .profile-panel dl { display: grid; grid-template-columns: 140px 1fr; gap: 14px; margin: 0 0 24px; }
+        .profile-panel dt  { color: #64748b; padding-top: 2px; }
+        .profile-panel dd  { margin: 0; font-weight: 600; }
+
+        /* ─── Form controls bên trong profile-panel ─── */
+        .profile-panel .form-group        { margin-bottom: 18px; }
+        .profile-panel label              { display: block; font-size: .88rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
+        .profile-panel input[type=text],
+        .profile-panel input[type=email],
+        .profile-panel input[type=tel],
+        .profile-panel input[type=password] { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; font-size: .95rem; transition: border-color .15s; }
+        .profile-panel input:focus         { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+        .profile-panel textarea            { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; min-height: 80px; resize: vertical; }
+        .profile-panel textarea:focus      { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+        .profile-tabs                      { display: flex; gap: 6px; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+        .profile-tabs a                    { padding: 10px 18px; text-decoration: none; font-weight: 700; font-size: .9rem; color: #64748b; border-radius: 10px 10px 0 0; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .profile-tabs a.active, .profile-tabs a:hover { color: #7c3aed; border-bottom-color: #7c3aed; }
+
+        /* ─── Order table ─── */
+        .order-table         { width: 100%; border-collapse: collapse; }
+        .order-table th      { padding: 12px 14px; background: #f8fafc; color: #64748b; font-size: .82rem; text-align: left; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+        .order-table td      { padding: 14px; border-bottom: 1px solid #f1f5f9; }
+        .order-table tr:last-child td { border-bottom: none; }
+        .order-table a       { color: #7c3aed; font-weight: 700; text-decoration: none; }
+        .order-table a:hover { text-decoration: underline; }
+        .order-status        { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+        .status-pending      { background: #fef3c7; color: #92400e; }
+        .status-confirmed    { background: #dbeafe; color: #1e40af; }
+        .status-shipping     { background: #e0e7ff; color: #4338ca; }
+        .status-completed    { background: #dcfce7; color: #166534; }
+        .status-cancelled    { background: #fee2e2; color: #991b1b; }
+
+        /* ─── Checkout ─── */
+        .checkout-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+        .checkout-grid .profile-panel:last-child h2 { margin-bottom: 12px; }
+        .checkout-summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: .93rem; }
+        .checkout-summary-row:last-child { border-bottom: none; }
+        .checkout-total { display: flex; justify-content: space-between; padding: 14px 0 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+
+        /* ─── Flash notices ─── */
+        .flash          { padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: .93rem; font-weight: 600; }
+        .flash-success  { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .flash-error    { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .notice         { color: #92400e; background: #fffbeb; padding: 12px 16px; border-radius: 10px; border: 1px solid #fde68a; }
+
+        /* ─── Cart badge ─── */
+        .cart-icon-wrap { position: relative; display: inline-flex; }
+        .cart-badge      { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border-radius: 99px; background: #db2777; color: #fff; font-size: 10px; font-weight: 800; line-height: 1; }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 900px) {
+            .category-grid, .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .checkout-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 560px) {
+            .storefront-hero  { padding: 32px 24px; }
+            .category-grid, .product-grid { grid-template-columns: 1fr; }
+            .catalog-filter > * { width: 100%; }
+            .profile-panel dl  { grid-template-columns: 1fr; gap: 4px; }
+            .profile-tabs a    { padding: 8px 12px; font-size: .82rem; }
+        }
     </style>
 </head>
 
@@ -1192,36 +1312,29 @@ if (function_exists('mb_substr')) {
                     id="userNav"
                 >
                     <a
-                        class="<?= menuActive(
-                            [
-                                '/',
-                                'home',
-                                'user-dashboard'
-                            ],
-                            $currentAction
-                        ) ?>"
+                        class="<?= menuActive(['/', 'home', 'user-dashboard'], $currentAction) ?>"
                         href="<?= BASE_URL ?>"
                     >
                         Trang chủ
                     </a>
 
                     <a
-                        href="javascript:void(0)"
-                        title="Sẽ phát triển sau"
+                        class="<?= menuActive(['products', 'product-detail'], $currentAction) ?>"
+                        href="<?= BASE_URL ?>?action=products"
                     >
                         Sản phẩm
                     </a>
 
                     <a
-                        href="javascript:void(0)"
-                        title="Sẽ phát triển sau"
+                        class="<?= menuActive(['categories'], $currentAction) ?>"
+                        href="<?= BASE_URL ?>?action=categories"
                     >
                         Danh mục
                     </a>
 
                     <a
-                        href="javascript:void(0)"
-                        title="Sẽ phát triển sau"
+                        class="<?= menuActive(['orders', 'order-detail'], $currentAction) ?>"
+                        href="<?= BASE_URL ?>?action=orders"
                     >
                         Đơn hàng của tôi
                     </a>
@@ -1229,13 +1342,27 @@ if (function_exists('mb_substr')) {
 
                 <div class="user-actions">
 
+                    <?php
+                        $cartCount = 0;
+                        if (!empty($_SESSION['cart'])) {
+                            foreach ($_SESSION['cart'] as $ci) {
+                                $cartCount += (int)($ci['quantity'] ?? 0);
+                            }
+                        }
+                    ?>
                     <a
-                        class="icon-button"
-                        href="javascript:void(0)"
-                        title="Giỏ hàng sẽ phát triển sau"
+                        class="icon-button cart-icon-wrap"
+                        href="<?= BASE_URL ?>?action=cart"
+                        title="Giỏ hàng"
                         aria-label="Giỏ hàng"
+                        id="cartNavBtn"
                     >
                         🛒
+                        <?php if ($cartCount > 0): ?>
+                            <span class="cart-badge" id="cartBadge">
+                                <?= $cartCount > 99 ? '99+' : $cartCount ?>
+                            </span>
+                        <?php endif; ?>
                     </a>
 
                     <div
@@ -1272,14 +1399,19 @@ if (function_exists('mb_substr')) {
                                 </span>
                             </div>
 
-                            <a href="javascript:void(0)">
+                            <a href="<?= BASE_URL ?>?action=profile">
                                 <span>👤</span>
-                                Thông tin tài khoản
+                                Thông tin cá nhân
                             </a>
 
-                            <a href="javascript:void(0)">
+                            <a href="<?= BASE_URL ?>?action=change-password">
+                                <span>🔑</span>
+                                Đổi mật khẩu
+                            </a>
+
+                            <a href="<?= BASE_URL ?>?action=orders">
                                 <span>📦</span>
-                                Lịch sử mua hàng
+                                Đơn hàng của tôi
                             </a>
 
                             <a
@@ -1425,62 +1557,34 @@ if (function_exists('mb_substr')) {
 <?php endif; ?>
 
 <script>
-    const userNav =
-        document.getElementById('userNav');
-
-    const mobileMenuButton =
-        document.getElementById(
-            'mobileMenuButton'
-        );
-
+    /* ── Mobile menu ── */
+    const userNav          = document.getElementById('userNav');
+    const mobileMenuButton = document.getElementById('mobileMenuButton');
     if (userNav && mobileMenuButton) {
-        mobileMenuButton.addEventListener(
-            'click',
-            function () {
-                userNav.classList.toggle('open');
-            }
-        );
+        mobileMenuButton.addEventListener('click', () => userNav.classList.toggle('open'));
     }
 
-    const userAccount =
-        document.getElementById('userAccount');
-
-    const accountButton =
-        document.getElementById('accountButton');
-
+    /* ── Account dropdown ── */
+    const userAccount  = document.getElementById('userAccount');
+    const accountButton= document.getElementById('accountButton');
     if (userAccount && accountButton) {
-        accountButton.addEventListener(
-            'click',
-            function (event) {
-                event.stopPropagation();
-
-                userAccount.classList.toggle(
-                    'open'
-                );
-            }
-        );
-
-        document.addEventListener(
-            'click',
-            function () {
-                userAccount.classList.remove(
-                    'open'
-                );
-            }
-        );
+        accountButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userAccount.classList.toggle('open');
+        });
+        document.addEventListener('click', () => userAccount.classList.remove('open'));
     }
 
-    if (userNav) {
-        const userLinks = userNav.querySelectorAll('a');
-        const userDestinations = ['<?= BASE_URL ?>', '<?= BASE_URL ?>?action=products', '<?= BASE_URL ?>?action=categories', '<?= BASE_URL ?>?action=orders'];
-        userLinks.forEach(function (link, index) { if (userDestinations[index]) link.href = userDestinations[index]; });
-    }
-    document.querySelectorAll('.user-actions a[href="javascript:void(0)"]').forEach(function (link, index) {
-        link.href = index === 0 ? '<?= BASE_URL ?>?action=cart' : (index === 1 ? '<?= BASE_URL ?>?action=profile' : '<?= BASE_URL ?>?action=orders');
-    });
+    /* ── Footer links ── */
     const footerLinks = document.querySelectorAll('.footer-column a[href="javascript:void(0)"]');
-    const footerDestinations = ['<?= BASE_URL ?>?action=products', '<?= BASE_URL ?>?action=categories', '<?= BASE_URL ?>?action=cart', '<?= BASE_URL ?>?action=profile', '<?= BASE_URL ?>?action=orders'];
-    footerLinks.forEach(function (link, index) { if (footerDestinations[index]) link.href = footerDestinations[index]; });
+    const footerDests = [
+        '<?= BASE_URL ?>?action=products',
+        '<?= BASE_URL ?>?action=categories',
+        '<?= BASE_URL ?>?action=cart',
+        '<?= BASE_URL ?>?action=profile',
+        '<?= BASE_URL ?>?action=orders'
+    ];
+    footerLinks.forEach((link, i) => { if (footerDests[i]) link.href = footerDests[i]; });
 
     const adminSidebar =
         document.getElementById('adminSidebar');

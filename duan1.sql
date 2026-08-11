@@ -1,11 +1,8 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Máy chủ: localhost:3306
--- Thời gian đã tạo: Th8 11, 2026 lúc 05:55 PM
--- Phiên bản máy phục vụ: 8.4.3
--- Phiên bản PHP: 8.3.16
+-- ============================================================
+-- DuAn1 — Fashion Store
+-- Schema đồng bộ với PHP code
+-- Tạo lại: 2026-08-12
+-- ============================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET FOREIGN_KEY_CHECKS = 0;
@@ -17,303 +14,312 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
---
--- Cơ sở dữ liệu: `duan1`
---
+-- ============================================================
+-- XÓA CÁC BẢNG CŨ (thứ tự từ con → cha để tránh lỗi FK)
+-- ============================================================
 
--- --------------------------------------------------------
-
---
--- Xóa bảng cũ nếu tồn tại (để dễ nạp lại)
---
-DROP TABLE IF EXISTS `reviews`;
-DROP TABLE IF EXISTS `cart`;
+DROP TABLE IF EXISTS `danh_gia`;
 DROP TABLE IF EXISTS `order_items`;
 DROP TABLE IF EXISTS `orders`;
-DROP TABLE IF EXISTS `products`;
-DROP TABLE IF EXISTS `categories`;
+DROP TABLE IF EXISTS `chi_tiet_san_pham`;
+DROP TABLE IF EXISTS `san_pham`;
+DROP TABLE IF EXISTS `danh_muc`;
+DROP TABLE IF EXISTS `noi_nhap_hang`;
 DROP TABLE IF EXISTS `login_logs`;
 DROP TABLE IF EXISTS `users`;
 
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `users`
---
+-- ============================================================
+-- BẢNG: users (Tài khoản)
+-- ============================================================
 
 CREATE TABLE `users` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `full_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role` enum('user','admin') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user',
-  `status` enum('active','blocked') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `last_login_at` datetime DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id`            BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
+  `full_name`     VARCHAR(100)        NOT NULL                    COMMENT 'Họ và tên',
+  `email`         VARCHAR(150)        NOT NULL                    COMMENT 'Email (unique)',
+  `phone`         VARCHAR(20)         DEFAULT NULL                COMMENT 'Số điện thoại',
+  `address`       VARCHAR(255)        DEFAULT NULL                COMMENT 'Địa chỉ',
+  `password`      VARCHAR(255)        NOT NULL                    COMMENT 'Mật khẩu đã hash',
+  `role`          ENUM('user','admin') NOT NULL DEFAULT 'user'    COMMENT 'Vai trò',
+  `status`        ENUM('active','blocked') NOT NULL DEFAULT 'active' COMMENT 'Trạng thái',
+  `last_login_at` DATETIME            DEFAULT NULL                COMMENT 'Lần đăng nhập cuối',
+  `created_at`    TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_users_email` (`email`),
-  UNIQUE KEY `uk_users_phone` (`phone`),
-  KEY `idx_users_role` (`role`),
-  KEY `idx_users_status` (`status`)
+  UNIQUE KEY `uk_users_email`  (`email`),
+  UNIQUE KEY `uk_users_phone`  (`phone`),
+  KEY `idx_users_role`         (`role`),
+  KEY `idx_users_status`       (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Đang đổ dữ liệu cho bảng `users`
---
-
+-- Dữ liệu mẫu: admin / 123456, user / 123456
 INSERT INTO `users` (`id`, `full_name`, `email`, `phone`, `address`, `password`, `role`, `status`, `last_login_at`, `created_at`, `updated_at`) VALUES
-(1, 'Quản trị viên', 'admin@gmail.com', '0900000000', 'Hà Nội', '$2y$12$9Hm1cuihDaouAArI/ldELeqfPPTE6PCA19.KKc3UtDTodV4LAW39a', 'admin', 'active', '2026-07-20 23:18:16', '2026-07-20 15:27:24', '2026-07-20 16:18:16'),
-(2, 'Phan Thế Tuân', 'phantuan23042006@gmail.com', '0352253220', 'Hà Nội', '$2y$10$m2T8QIByuecTpjrTHP.u6uhWhf3hxi8uL1TjraulGbFwrkapE5kqa', 'user', 'active', '2026-07-20 23:06:21', '2026-07-20 16:06:15', '2026-07-20 16:06:21');
+(1, 'Quản trị viên', 'admin@gmail.com', '0900000000', 'Hà Nội',
+    '$2y$12$9Hm1cuihDaouAArI/ldELeqfPPTE6PCA19.KKc3UtDTodV4LAW39a',
+    'admin', 'active', NOW(), NOW(), NOW()),
+(2, 'Phan Thế Tuân', 'phantuan23042006@gmail.com', '0352253220', 'Hà Nội',
+    '$2y$10$m2T8QIByuecTpjrTHP.u6uhWhf3hxi8uL1TjraulGbFwrkapE5kqa',
+    'user', 'active', NOW(), NOW(), NOW());
 
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `login_logs`
---
+-- ============================================================
+-- BẢNG: login_logs (Lịch sử đăng nhập)
+-- ============================================================
 
 CREATE TABLE `login_logs` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` bigint UNSIGNED DEFAULT NULL,
-  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `login_status` enum('success','failed') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id`           BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `user_id`      BIGINT UNSIGNED  DEFAULT NULL               COMMENT 'NULL nếu tài khoản không tồn tại',
+  `email`        VARCHAR(150)     NOT NULL,
+  `login_status` ENUM('success','failed') NOT NULL,
+  `ip_address`   VARCHAR(45)      DEFAULT NULL,
+  `user_agent`   VARCHAR(500)     DEFAULT NULL,
+  `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_login_logs_user_id` (`user_id`),
-  KEY `idx_login_logs_email` (`email`),
-  KEY `idx_login_logs_status` (`login_status`)
+  KEY `idx_login_logs_email`   (`email`),
+  KEY `idx_login_logs_status`  (`login_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Đang đổ dữ liệu cho bảng `login_logs`
---
+-- ============================================================
+-- BẢNG: danh_muc (Danh mục sản phẩm)
+-- PHP model: Category → $table = 'danh_muc'
+-- ============================================================
 
-INSERT INTO `login_logs` (`id`, `user_id`, `email`, `login_status`, `ip_address`, `user_agent`, `created_at`) VALUES
-(1, 1, 'admin@gmail.com', 'failed', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150.0.0.0', '2026-07-20 16:04:57'),
-(2, 1, 'admin@gmail.com', 'success', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150.0.0.0', '2026-07-20 16:05:28'),
-(3, 2, 'phantuan23042006@gmail.com', 'success', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150.0.0.0', '2026-07-20 16:06:21'),
-(4, 1, 'admin@gmail.com', 'failed', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150.0.0.0', '2026-07-20 16:09:00'),
-(5, 1, 'admin@gmail.com', 'success', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150.0.0.0', '2026-07-20 16:09:37'),
-(6, 1, 'admin@gmail.com', 'success', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150.0.0.0', '2026-07-20 16:18:16');
-
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `categories` (Danh mục sản phẩm)
---
-
-CREATE TABLE `categories` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `slug` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('active','hidden') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CREATE TABLE `danh_muc` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`       VARCHAR(100)    NOT NULL            COMMENT 'Tên danh mục',
+  `created_at` TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_categories_slug` (`slug`),
-  KEY `idx_categories_status` (`status`)
+  UNIQUE KEY `uk_danh_muc_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Đang đổ dữ liệu cho bảng `categories`
---
+INSERT INTO `danh_muc` (`id`, `name`) VALUES
+(1, 'Thời trang nam'),
+(2, 'Thời trang nữ'),
+(3, 'Áo khoác'),
+(4, 'Áo thun'),
+(5, 'Quần'),
+(6, 'Phụ kiện');
 
-INSERT INTO `categories` (`id`, `name`, `slug`, `description`, `image`, `status`, `created_at`) VALUES
-(1, 'Thời trang nam', 'thoi-trang-nam', 'Áo, quần và phụ kiện phong cách cho nam giới', '👔', 'active', CURRENT_TIMESTAMP),
-(2, 'Thời trang nữ', 'thoi-trang-nu', 'Váy, áo và các item nữ tính, tinh tế', '👗', 'active', CURRENT_TIMESTAMP),
-(3, 'Áo khoác', 'ao-khoac', 'Bộ sưu tập áo khoác thời trang các mùa', '🧥', 'active', CURRENT_TIMESTAMP),
-(4, 'Áo thun', 'ao-thun', 'Áo thun basic, unisex dễ phối đồ', '👕', 'active', CURRENT_TIMESTAMP),
-(5, 'Quần', 'quan', 'Quần jean, quần tây và quần short năng động', '👖', 'active', CURRENT_TIMESTAMP),
-(6, 'Phụ kiện', 'phu-kien', 'Túi xách, nón và phụ kiện thời trang sành điệu', '👜', 'active', CURRENT_TIMESTAMP);
+-- ============================================================
+-- BẢNG: noi_nhap_hang (Nhà cung cấp / Nơi nhập hàng)
+-- PHP model: Supplier → $table = 'noi_nhap_hang'
+-- ============================================================
 
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `products` (Sản phẩm)
---
-
-CREATE TABLE `products` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `category_id` bigint UNSIGNED NOT NULL,
-  `name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `slug` varchar(220) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `price` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `sale_price` decimal(12,2) DEFAULT NULL,
-  `quantity` int NOT NULL DEFAULT '0',
-  `description` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `badge` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('active','hidden') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CREATE TABLE `noi_nhap_hang` (
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`          VARCHAR(150)    NOT NULL            COMMENT 'Tên nơi nhập hàng',
+  `dia_chi`       VARCHAR(255)    DEFAULT NULL        COMMENT 'Địa chỉ',
+  `so_dien_thoai` VARCHAR(25)     DEFAULT NULL        COMMENT 'Số điện thoại liên hệ',
+  `ghi_chu`       TEXT            DEFAULT NULL        COMMENT 'Ghi chú',
+  `created_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_products_slug` (`slug`),
-  KEY `idx_products_category_id` (`category_id`),
-  KEY `idx_products_status` (`status`)
+  UNIQUE KEY `uk_noi_nhap_hang_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Đang đổ dữ liệu cho bảng `products`
---
+INSERT INTO `noi_nhap_hang` (`id`, `name`, `dia_chi`, `so_dien_thoai`, `ghi_chu`) VALUES
+(1, 'Xưởng May Hà Nội', '12 Nguyễn Trãi, Hà Nội', '024-3838-0000', 'Nhập sỉ áo khoác, sơ mi'),
+(2, 'Công ty Thời Trang HCM', '88 Lê Lai, TP.HCM', '028-3838-1111', 'Nhập quần, váy, phụ kiện'),
+(3, 'Xưởng Dệt Bình Dương', 'KCN Mỹ Phước, Bình Dương', '0274-3838-222', 'Nhập áo thun các loại');
 
-INSERT INTO `products` (`id`, `category_id`, `name`, `slug`, `image`, `price`, `sale_price`, `quantity`, `description`, `badge`, `status`, `created_at`) VALUES
-(1, 3, 'Áo khoác denim oversize', 'ao-khoac-denim-oversize', '🧥', 590000.00, 520000.00, 50, 'Áo khoác denim phong cách Hàn Quốc, chất vải dày dặn cá tính.', 'Bán chạy', 'active', CURRENT_TIMESTAMP),
-(2, 4, 'Áo thun basic cổ tròn', 'ao-thun-basic-co-tron', '👕', 249000.00, NULL, 100, 'Áo thun cotton 100% thoáng mát, thấm hút mồ hôi tốt.', 'Mới', 'active', CURRENT_TIMESTAMP),
-(3, 2, 'Váy nữ dáng dài', 'vay-nu-dang-dai', '👗', 459000.00, 399000.00, 35, 'Váy nữ tôn dáng thanh lịch, phù hợp đi chơi và dự tiệc.', 'Hot', 'active', CURRENT_TIMESTAMP),
-(4, 5, 'Quần jean ống rộng', 'quan-jean-ong-rong', '👖', 389000.00, 349000.00, 45, 'Quần jean ống rộng hack dáng chuẩn trend.', 'Giảm giá', 'active', CURRENT_TIMESTAMP),
-(5, 1, 'Áo sơ mi tay dài cao cấp', 'ao-so-mi-tay-dai-cao-cap', '👔', 320000.00, NULL, 60, 'Áo sơ mi công sở nam form slim-fit sang trọng.', 'Mới', 'active', CURRENT_TIMESTAMP),
-(6, 6, 'Túi xách nữ thời trang', 'tui-xach-nu-thoi-trang', '👜', 520000.00, 480000.00, 20, 'Túi xách da tổng hợp cao cấp, kiểu dáng hiện đại.', 'Hot', 'active', CURRENT_TIMESTAMP);
+-- ============================================================
+-- BẢNG: san_pham (Sản phẩm)
+-- PHP model: Product → $table = 'san_pham'
+-- ============================================================
 
--- --------------------------------------------------------
+CREATE TABLE `san_pham` (
+  `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`             VARCHAR(200)    NOT NULL              COMMENT 'Tên sản phẩm',
+  `gioi_thieu`       TEXT            DEFAULT NULL          COMMENT 'Mô tả giới thiệu',
+  `anh`              VARCHAR(255)    DEFAULT NULL          COMMENT 'Tên file ảnh (lưu trong assets/uploads/)',
+  `danh_muc_id`      BIGINT UNSIGNED NOT NULL              COMMENT 'FK → danh_muc.id',
+  `noi_nhap_hang_id` BIGINT UNSIGNED NOT NULL              COMMENT 'FK → noi_nhap_hang.id',
+  `created_at`       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_san_pham_danh_muc`      (`danh_muc_id`),
+  KEY `idx_san_pham_noi_nhap_hang` (`noi_nhap_hang_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Cấu trúc bảng cho bảng `orders` (Đơn hàng)
---
+INSERT INTO `san_pham` (`id`, `name`, `gioi_thieu`, `anh`, `danh_muc_id`, `noi_nhap_hang_id`) VALUES
+(1, 'Áo khoác denim oversize', 'Áo khoác denim phong cách Hàn Quốc, chất vải dày dặn cá tính.', 'prod_denim_jacket.svg', 3, 1),
+(2, 'Áo thun basic cổ tròn',  'Áo thun cotton 100% thoáng mát, thấm hút mồ hôi tốt.',          'prod_basic_tshirt.svg', 4, 3),
+(3, 'Váy nữ dáng dài',         'Váy nữ tôn dáng thanh lịch, phù hợp đi chơi và dự tiệc.',       'prod_long_dress.svg',    2, 2),
+(4, 'Quần jean ống rộng',      'Quần jean ống rộng hack dáng chuẩn trend.',                       'prod_wide_jeans.svg',    5, 2),
+(5, 'Áo sơ mi tay dài cao cấp','Áo sơ mi công sở nam form slim-fit sang trọng.',                 'prod_shirt.svg',         1, 1),
+(6, 'Túi xách nữ thời trang',  'Túi xách da tổng hợp cao cấp, kiểu dáng hiện đại.',              'prod_handbag.svg',       6, 2);
+
+-- ============================================================
+-- BẢNG: chi_tiet_san_pham (Biến thể size sản phẩm)
+-- PHP model: ProductDetail → $table = 'chi_tiet_san_pham'
+-- ============================================================
+
+CREATE TABLE `chi_tiet_san_pham` (
+  `id`          BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `san_pham_id` BIGINT UNSIGNED  NOT NULL              COMMENT 'FK → san_pham.id',
+  `size`        VARCHAR(20)      NOT NULL              COMMENT 'Size (S, M, L, XL, XXL...)',
+  `gia_nhap`    DECIMAL(12,2)    NOT NULL DEFAULT 0    COMMENT 'Giá nhập vào',
+  `gia_ban`     DECIMAL(12,2)    NOT NULL DEFAULT 0    COMMENT 'Giá bán ra',
+  `so_luong`    INT              NOT NULL DEFAULT 0    COMMENT 'Tồn kho',
+  `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ctsp_sp_size` (`san_pham_id`, `size`),
+  KEY `idx_ctsp_san_pham_id` (`san_pham_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Biến thể cho 6 sản phẩm mẫu
+INSERT INTO `chi_tiet_san_pham` (`san_pham_id`, `size`, `gia_nhap`, `gia_ban`, `so_luong`) VALUES
+-- Áo khoác denim oversize (id=1)
+(1, 'M',   350000, 520000, 15),
+(1, 'L',   350000, 520000, 20),
+(1, 'XL',  350000, 540000, 10),
+(1, 'XXL', 350000, 560000,  5),
+-- Áo thun basic (id=2)
+(2, 'S',   100000, 220000, 30),
+(2, 'M',   100000, 229000, 40),
+(2, 'L',   100000, 239000, 30),
+(2, 'XL',  105000, 249000, 20),
+-- Váy nữ dáng dài (id=3)
+(3, 'S',   200000, 380000, 10),
+(3, 'M',   200000, 399000, 15),
+(3, 'L',   210000, 419000, 10),
+-- Quần jean (id=4)
+(4, 'S',   180000, 329000, 12),
+(4, 'M',   180000, 349000, 18),
+(4, 'L',   185000, 369000, 10),
+(4, 'XL',  190000, 389000,  5),
+-- Áo sơ mi (id=5)
+(5, 'M',   150000, 289000, 20),
+(5, 'L',   150000, 299000, 25),
+(5, 'XL',  155000, 319000, 15),
+-- Túi xách (id=6)
+(6, 'ONE SIZE', 250000, 480000, 20);
+
+-- ============================================================
+-- BẢNG: danh_gia (Đánh giá sản phẩm)
+-- PHP model: Review → $table = 'danh_gia'
+-- ============================================================
+
+CREATE TABLE `danh_gia` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `san_pham_id` BIGINT UNSIGNED NOT NULL              COMMENT 'FK → san_pham.id',
+  `user_id`     BIGINT UNSIGNED NOT NULL              COMMENT 'FK → users.id',
+  `so_sao`      TINYINT UNSIGNED NOT NULL DEFAULT 5   COMMENT 'Số sao (1–5)',
+  `noi_dung`    TEXT            DEFAULT NULL          COMMENT 'Nội dung đánh giá',
+  `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_danh_gia_san_pham_id` (`san_pham_id`),
+  KEY `idx_danh_gia_user_id`     (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `danh_gia` (`san_pham_id`, `user_id`, `so_sao`, `noi_dung`, `created_at`) VALUES
+(1, 2, 5, 'Áo khoác rất đẹp, chất vải denim dày dặn tôn dáng!', '2026-08-02 10:00:00'),
+(2, 2, 4, 'Áo thun mặc thoáng mát, đúng size mô tả.',           '2026-08-06 16:20:00');
+
+-- ============================================================
+-- BẢNG: orders (Đơn hàng)
+-- PHP model: Order → INSERT dùng order_code, recipient_name...
+-- ============================================================
 
 CREATE TABLE `orders` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `customer_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `customer_email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `customer_phone` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `shipping_address` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `note` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `total_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `payment_method` enum('cod','vnpay','momo','banking') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cod',
-  `payment_status` enum('pending','paid','failed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `status` enum('pending','processing','shipping','completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id`               BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `order_code`       VARCHAR(50)       NOT NULL              COMMENT 'Mã đơn hàng (unique)',
+  `user_id`          BIGINT UNSIGNED   NOT NULL              COMMENT 'FK → users.id',
+  `recipient_name`   VARCHAR(100)      NOT NULL              COMMENT 'Tên người nhận',
+  `recipient_phone`  VARCHAR(20)       NOT NULL              COMMENT 'SĐT người nhận',
+  `recipient_address`VARCHAR(255)      NOT NULL              COMMENT 'Địa chỉ nhận hàng',
+  `note`             TEXT              DEFAULT NULL          COMMENT 'Ghi chú đơn hàng',
+  `payment_method`   ENUM('cod','banking','vnpay','momo') NOT NULL DEFAULT 'cod',
+  `status`           ENUM('pending','confirmed','shipping','completed','cancelled') NOT NULL DEFAULT 'pending',
+  `total_amount`     DECIMAL(14,2)     NOT NULL DEFAULT 0,
+  `created_at`       TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_orders_code` (`code`),
-  KEY `idx_orders_user_id` (`user_id`),
-  KEY `idx_orders_status` (`status`)
+  UNIQUE KEY `uk_orders_code`   (`order_code`),
+  KEY `idx_orders_user_id`      (`user_id`),
+  KEY `idx_orders_status`       (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Đang đổ dữ liệu cho bảng `orders`
---
+INSERT INTO `orders` (`id`, `order_code`, `user_id`, `recipient_name`, `recipient_phone`, `recipient_address`, `note`, `payment_method`, `status`, `total_amount`, `created_at`) VALUES
+(1, 'DH20260801ABCD', 2, 'Phan Thế Tuân', '0352253220', 'Hà Nội', 'Giao giờ hành chính', 'cod',     'completed', 520000.00, '2026-08-01 09:00:00'),
+(2, 'DH20260805EFGH', 2, 'Phan Thế Tuân', '0352253220', 'Hà Nội', 'Gọi trước khi giao',   'cod',     'shipping',  229000.00, '2026-08-05 14:30:00'),
+(3, 'DH20260810IJKL', 2, 'Phan Thế Tuân', '0352253220', 'Hà Nội', NULL,                    'banking', 'pending',   399000.00, '2026-08-10 10:15:00');
 
-INSERT INTO `orders` (`id`, `code`, `user_id`, `customer_name`, `customer_email`, `customer_phone`, `shipping_address`, `note`, `total_amount`, `payment_method`, `payment_status`, `status`, `created_at`) VALUES
-(1, 'DH-1001', 2, 'Phan Thế Tuân', 'phantuan23042006@gmail.com', '0352253220', 'Hà Nội', 'Giao giờ hành chính', 590000.00, 'cod', 'paid', 'completed', '2026-08-01 09:00:00'),
-(2, 'DH-1002', 2, 'Phan Thế Tuân', 'phantuan23042006@gmail.com', '0352253220', 'Hà Nội', 'Gọi trước khi giao', 249000.00, 'cod', 'pending', 'shipping', '2026-08-05 14:30:00'),
-(3, 'DH-1003', 2, 'Phan Thế Tuân', 'phantuan23042006@gmail.com', '0352253220', 'Hà Nội', NULL, 459000.00, 'banking', 'pending', 'pending', '2026-08-10 10:15:00');
-
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `order_items` (Chi tiết đơn hàng)
---
+-- ============================================================
+-- BẢNG: order_items (Chi tiết đơn hàng)
+-- PHP model: Order → INSERT dùng san_pham_id, chi_tiet_san_pham_id, size, gia_ban, so_luong, thanh_tien
+-- ============================================================
 
 CREATE TABLE `order_items` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `order_id` bigint UNSIGNED NOT NULL,
-  `product_id` bigint UNSIGNED DEFAULT NULL,
-  `product_name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `price` decimal(12,2) NOT NULL,
-  `quantity` int NOT NULL DEFAULT '1',
-  `total_price` decimal(12,2) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id`            BIGINT UNSIGNED NOT NULL              COMMENT 'FK → orders.id',
+  `san_pham_id`         BIGINT UNSIGNED DEFAULT NULL          COMMENT 'FK → san_pham.id (SET NULL khi xóa SP)',
+  `chi_tiet_san_pham_id`BIGINT UNSIGNED DEFAULT NULL          COMMENT 'FK → chi_tiet_san_pham.id',
+  `product_name`        VARCHAR(200)    NOT NULL              COMMENT 'Tên sản phẩm tại thời điểm đặt',
+  `size`                VARCHAR(20)     NOT NULL              COMMENT 'Size tại thời điểm đặt',
+  `gia_ban`             DECIMAL(12,2)   NOT NULL              COMMENT 'Giá bán tại thời điểm đặt',
+  `so_luong`            INT             NOT NULL DEFAULT 1    COMMENT 'Số lượng',
+  `thanh_tien`          DECIMAL(14,2)   NOT NULL              COMMENT 'Thành tiền = gia_ban × so_luong',
+  `created_at`          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_order_items_order_id` (`order_id`),
-  KEY `idx_order_items_product_id` (`product_id`)
+  KEY `idx_order_items_order_id`   (`order_id`),
+  KEY `idx_order_items_sp_id`      (`san_pham_id`),
+  KEY `idx_order_items_ctsp_id`    (`chi_tiet_san_pham_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Đang đổ dữ liệu cho bảng `order_items`
---
+-- Chi tiết cho 3 đơn hàng mẫu (variant_id ánh xạ theo INSERT chi_tiet_san_pham ở trên)
+INSERT INTO `order_items` (`order_id`, `san_pham_id`, `chi_tiet_san_pham_id`, `product_name`, `size`, `gia_ban`, `so_luong`, `thanh_tien`) VALUES
+(1, 1, 2, 'Áo khoác denim oversize', 'L',   520000.00, 1, 520000.00),
+(2, 2, 6, 'Áo thun basic cổ tròn',   'M',   229000.00, 1, 229000.00),
+(3, 3, 9, 'Váy nữ dáng dài',         'M',   399000.00, 1, 399000.00);
 
-INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `price`, `quantity`, `total_price`, `created_at`) VALUES
-(1, 1, 1, 'Áo khoác denim oversize', 590000.00, 1, 590000.00, '2026-08-01 09:00:00'),
-(2, 2, 2, 'Áo thun basic cổ tròn', 249000.00, 1, 249000.00, '2026-08-05 14:30:00'),
-(3, 3, 3, 'Váy nữ dáng dài', 459000.00, 1, 459000.00, '2026-08-10 10:15:00');
-
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `cart` (Giỏ hàng)
---
-
-CREATE TABLE `cart` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `product_id` bigint UNSIGNED NOT NULL,
-  `quantity` int NOT NULL DEFAULT '1',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_cart_user_product` (`user_id`, `product_id`),
-  KEY `idx_cart_user_id` (`user_id`),
-  KEY `idx_cart_product_id` (`product_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Đang đổ dữ liệu cho bảng `cart`
---
-
-INSERT INTO `cart` (`id`, `user_id`, `product_id`, `quantity`, `created_at`) VALUES
-(1, 2, 4, 1, CURRENT_TIMESTAMP),
-(2, 2, 2, 2, CURRENT_TIMESTAMP);
-
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `reviews` (Đánh giá sản phẩm)
---
-
-CREATE TABLE `reviews` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `product_id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `rating` tinyint UNSIGNED NOT NULL DEFAULT '5',
-  `comment` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_reviews_product_id` (`product_id`),
-  KEY `idx_reviews_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Đang đổ dữ liệu cho bảng `reviews`
---
-
-INSERT INTO `reviews` (`id`, `product_id`, `user_id`, `rating`, `comment`, `created_at`) VALUES
-(1, 1, 2, 5, 'Áo khoác rất đẹp, chất vải denim dày dặn tôn dáng!', '2026-08-02 10:00:00'),
-(2, 2, 2, 4, 'Áo thun mặc thoáng mát, đúng size description.', '2026-08-06 16:20:00');
-
--- --------------------------------------------------------
-
---
--- Ràng buộc (Foreign Keys)
---
+-- ============================================================
+-- FOREIGN KEYS
+-- ============================================================
 
 ALTER TABLE `login_logs`
-  ADD CONSTRAINT `fk_login_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_login_logs_user`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE `products`
-  ADD CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `san_pham`
+  ADD CONSTRAINT `fk_san_pham_danh_muc`
+    FOREIGN KEY (`danh_muc_id`) REFERENCES `danh_muc` (`id`)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_san_pham_noi_nhap_hang`
+    FOREIGN KEY (`noi_nhap_hang_id`) REFERENCES `noi_nhap_hang` (`id`)
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `chi_tiet_san_pham`
+  ADD CONSTRAINT `fk_ctsp_san_pham`
+    FOREIGN KEY (`san_pham_id`) REFERENCES `san_pham` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `danh_gia`
+  ADD CONSTRAINT `fk_danh_gia_san_pham`
+    FOREIGN KEY (`san_pham_id`) REFERENCES `san_pham` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_danh_gia_user`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `orders`
-  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_orders_user`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `order_items`
-  ADD CONSTRAINT `fk_order_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_order_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE `cart`
-  ADD CONSTRAINT `fk_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_cart_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `reviews`
-  ADD CONSTRAINT `fk_reviews_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_order_items_order`
+    FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_order_items_san_pham`
+    FOREIGN KEY (`san_pham_id`) REFERENCES `san_pham` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_order_items_ctsp`
+    FOREIGN KEY (`chi_tiet_san_pham_id`) REFERENCES `chi_tiet_san_pham` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

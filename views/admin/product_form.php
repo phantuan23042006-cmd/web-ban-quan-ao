@@ -296,14 +296,15 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
                 <!-- Ảnh sản phẩm -->
                 <div class="form-group full-width">
-                    <label for="anh">Ảnh sản phẩm</label>
-                    <input type="file" id="anh" name="anh" accept="image/*">
-                    <?php if ($isEdit && !empty($product['anh'])): ?>
-                        <div class="image-preview-wrap">
-                            <img src="<?= BASE_ASSETS_UPLOADS . e($product['anh']) ?>" alt="Product image" class="image-preview">
-                            <span style="font-size:13px; color:#64748b;">Ảnh hiện tại: <?= e($product['anh']) ?></span>
-                        </div>
-                    <?php endif; ?>
+                    <label for="anh">Ảnh sản phẩm <small style="color:#64748b;font-weight:normal">(Chấp nhận JPG, PNG, WEBP, GIF — Tối đa 5 MB)</small></label>
+                    <input type="file" id="anh" name="anh" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewSelectedImage(this)">
+
+                    <div class="image-preview-wrap" id="imagePreviewContainer" style="<?= ($isEdit && !empty($product['anh'])) ? '' : 'display:none;' ?>">
+                        <img id="imagePreviewImg" src="<?= ($isEdit && !empty($product['anh'])) ? BASE_ASSETS_UPLOADS . e($product['anh']) : '' ?>" alt="Product image preview" class="image-preview">
+                        <span id="imagePreviewText" style="font-size:13px; color:#64748b;">
+                            <?= ($isEdit && !empty($product['anh'])) ? 'Ảnh hiện tại: ' . e($product['anh']) : '' ?>
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Giới thiệu -->
@@ -520,5 +521,27 @@ function removeVariantRow(btn) {
 
 function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function previewSelectedImage(input) {
+    const container = document.getElementById('imagePreviewContainer');
+    const img = document.getElementById('imagePreviewImg');
+    const text = document.getElementById('imagePreviewText');
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File ảnh quá lớn! Vui lòng chọn file dưới 5 MB.');
+            input.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            img.src = e.target.result;
+            text.textContent = 'Ảnh mới đã chọn: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+            container.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
 }
 </script>

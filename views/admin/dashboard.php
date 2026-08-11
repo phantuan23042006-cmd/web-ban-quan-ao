@@ -316,11 +316,21 @@ $review_count = (int) ($reviewCount ?? count($reviews));
             <h4>Danh mục sản phẩm</h4>
             <div class="dashboard-list">
                 <?php if (!empty($categories)): ?>
+                    <?php
+                        $sumProdCount = 0;
+                        foreach ($categories as $c) {
+                            $sumProdCount += (int) ($c['product_count'] ?? $c['count'] ?? 0);
+                        }
+                    ?>
                     <?php foreach ($categories as $category): ?>
+                        <?php
+                            $cCount   = (int) ($category['product_count'] ?? $category['count'] ?? 0);
+                            $cPercent = ($sumProdCount > 0) ? round(($cCount / $sumProdCount) * 100) : 0;
+                        ?>
                         <div class="dashboard-category-item">
                             <div class="dashboard-category-head">
                                 <span><?= e($category['name']) ?></span>
-                                <span><?= e($category['count']) ?> sản phẩm</span>
+                                <span><?= $cCount ?> sản phẩm</span>
                             </div>
                             <?php if (!empty($category['description'])): ?>
                                 <div class="dashboard-category-desc">
@@ -328,13 +338,13 @@ $review_count = (int) ($reviewCount ?? count($reviews));
                                 </div>
                             <?php endif; ?>
                             <div class="dashboard-progress">
-                                <span style="width: <?= e($category['percent']) ?>%"></span>
+                                <span style="width: <?= $cPercent ?>%"></span>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="dashboard-category-item">
-                        <span>Không tìm thấy danh mục sản phẩm. Vui lòng kiểm tra dữ liệu `categories` hoặc `products`.</span>
+                        <span>Chưa có danh mục sản phẩm nào.</span>
                     </div>
                 <?php endif; ?>
             </div>
