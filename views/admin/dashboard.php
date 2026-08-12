@@ -1,382 +1,428 @@
 <?php
-$stats = $stats ?? [];
-$overview = $overview ?? [];
-$categories = $categories ?? [];
-$reviews = $reviews ?? [];
+$stats          = $stats ?? [];
+$overview       = $overview ?? [];
+$categories     = $categories ?? [];
+$reviews        = $reviews ?? [];
 $recentActivity = $recentActivity ?? [];
 
-$total_users = (int) ($stats['total_users'] ?? 0);
-$active_users = (int) ($stats['active_users'] ?? 0);
-$blocked_users = (int) ($stats['blocked_users'] ?? 0);
-$admin_users = (int) ($stats['total_admins'] ?? 0);
+$total_users      = (int) ($stats['total_users'] ?? 0);
+$active_users     = (int) ($stats['active_users'] ?? 0);
+$blocked_users    = (int) ($stats['blocked_users'] ?? 0);
+$admin_users      = (int) ($stats['total_admins'] ?? 0);
 
-$total_products = (int) ($overview['total_products'] ?? 0);
-$total_orders = (int) ($overview['total_orders'] ?? 0);
-$pending_orders = (int) ($overview['pending_orders'] ?? 0);
+$total_products   = (int) ($overview['total_products'] ?? 0);
+$total_orders     = (int) ($overview['total_orders'] ?? 0);
+$pending_orders   = (int) ($overview['pending_orders'] ?? 0);
 $completed_orders = (int) ($overview['completed_orders'] ?? 0);
-$total_revenue = (int) ($overview['total_revenue'] ?? 0);
-$category_count = (int) ($categoryCount ?? count($categories));
-$review_average = (float) ($reviewAverage ?? 0);
-$review_count = (int) ($reviewCount ?? count($reviews));
+$total_revenue    = (int) ($overview['total_revenue'] ?? 0);
+$category_count   = (int) ($categoryCount ?? count($categories));
+$review_average   = (float) ($reviewAverage ?? 0);
+$review_count     = (int) ($reviewCount ?? count($reviews));
 ?>
 
 <style>
-    .admin-dashboard-page {
+    .dash-container {
         display: grid;
-        gap: 24px;
+        gap: 28px;
     }
 
-    .dashboard-cards {
+    /* Metric Grid */
+    .dash-metrics {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 20px;
     }
 
-    .dashboard-card {
-        padding: 28px 24px;
-        border-radius: 28px;
-        background: linear-gradient(180deg, #ffffff 0%, #f8f3ff 100%);
-        border: 1px solid rgba(226, 232, 240, 0.95);
-        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-        min-height: 150px;
-    }
-
-    .dashboard-card h3 {
-        margin: 0;
-        color: #334155;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.22em;
-        font-weight: 700;
-    }
-
-    .dashboard-card strong {
-        display: block;
-        margin-top: 20px;
-        color: #0f172a;
-        font-size: 40px;
-        line-height: 1;
-    }
-
-    .dashboard-actions {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 16px;
-    }
-
-    .dashboard-action {
-        padding: 24px;
-        border-radius: 24px;
-        background: #ffffff;
-        border: 1px solid #e5e7f0;
-        box-shadow: 0 18px 35px rgba(15, 23, 42, 0.05);
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
-        text-decoration: none;
-        color: #111827;
-        display: block;
-        cursor: pointer;
-    }
-
-    .dashboard-action:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.1);
-    }
-
-    .dashboard-action h4 {
-        margin: 0 0 8px;
-        font-size: 18px;
-    }
-
-    .dashboard-action p {
-        margin: 0;
-        color: #64748b;
-        font-size: 14px;
-    }
-
-    .dashboard-summary-card {
-        padding: 28px;
-        border-radius: 24px;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+    .dash-card {
         position: relative;
-        z-index: 1;
-    }
-
-    .dashboard-summary-card h4 {
-        margin: 0 0 18px;
-        color: #0f172a;
-        font-size: 20px;
-        letter-spacing: -0.02em;
-    }
-
-    .dashboard-link-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        margin-top: 12px;
-        padding: 10px 14px;
-        border: 0;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #7c3aed, #db2777);
-        color: #ffffff;
-        text-decoration: none;
-        font-weight: 700;
-        cursor: pointer;
-    }
-
-    .dashboard-summary-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .dashboard-summary-mini {
-        padding: 18px;
-        border-radius: 16px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-    }
-
-    .dashboard-summary-mini strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 22px;
-        color: #0f172a;
-    }
-
-    .dashboard-summary-mini span {
-        color: #64748b;
-        font-size: 13px;
-    }
-
-    .dashboard-detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 18px;
-    }
-
-    .dashboard-list {
-        display: grid;
-        gap: 12px;
-    }
-
-    .dashboard-category-item,
-    .dashboard-review-item,
-    .dashboard-activity-item {
-        padding: 18px 20px;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
+        padding: 24px;
+        border-radius: 20px;
         background: #ffffff;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-        pointer-events: auto;
-    }
-
-    .dashboard-category-item {
-        display: grid;
-        gap: 10px;
-    }
-
-    .dashboard-category-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .dashboard-category-meta {
-        color: #475569;
-        font-size: 14px;
-    }
-
-    .dashboard-progress {
-        width: 100%;
-        height: 10px;
-        border-radius: 999px;
-        background: #e2e8f0;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
     }
 
-    .dashboard-progress > span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(135deg, #7c3aed, #f472b6);
-        transition: width 0.45s ease;
+    .dash-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        border-color: rgba(99, 102, 241, 0.3);
     }
 
-    .dashboard-progress > span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(135deg, #7c3aed, #db2777);
+    .dash-card h3 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
-    .dashboard-review-item strong,
-    .dashboard-activity-item strong {
-        display: block;
-        margin-bottom: 8px;
+    .dash-card .value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 12px;
+        letter-spacing: -0.5px;
+        line-height: 1;
+    }
+
+    .dash-card .subtext {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Action Links */
+    .dash-quick-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .quick-link-card {
+        padding: 22px 24px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .quick-link-card:hover {
+        background: #faf5ff;
+        border-color: #c084fc;
+        transform: translateY(-2px);
+    }
+
+    .quick-link-title {
+        font-size: 16px;
+        font-weight: 800;
         color: #0f172a;
     }
 
-    .dashboard-review-item span,
-    .dashboard-activity-item span {
-        color: #475569;
-        font-size: 14px;
-        line-height: 1.7;
-    }
-
-    .dashboard-rating {
-        color: #f97316;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        margin-bottom: 10px;
-    }
-
-    .dashboard-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: #eef2ff;
-        color: #4338ca;
+    .quick-link-sub {
         font-size: 13px;
-        font-weight: 700;
+        color: #64748b;
+        margin-top: 4px;
     }
 
-    .dashboard-category-desc {
-        color: #475569;
+    .quick-link-arrow {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        color: #6366f1;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .quick-link-card:hover .quick-link-arrow {
+        background: #6366f1;
+        color: #ffffff;
+        transform: translateX(3px);
+    }
+
+    /* Section Panels */
+    .dash-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .dash-panel {
+        padding: 26px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .dash-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .dash-panel-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    /* Category progress */
+    .cat-progress-item {
+        margin-bottom: 16px;
+    }
+
+    .cat-progress-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .cat-progress-info {
+        display: flex;
+        justify-content: space-between;
         font-size: 14px;
-        line-height: 1.7;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .cat-bar-wrap {
+        height: 8px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+
+    .cat-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #6366f1, #ec4899);
+        transition: width 0.5s ease;
+    }
+
+    /* Reviews list */
+    .rev-item {
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
         margin-bottom: 12px;
     }
 
-    .dashboard-summary-card h4 {
-        user-select: none;
+    .rev-item:last-child {
+        margin-bottom: 0;
     }
 
-    @media (max-width: 980px) {
-        .dashboard-cards,
-        .dashboard-actions,
-        .dashboard-summary {
-            grid-template-columns: 1fr;
-        }
+    .btn-gradient {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 18px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 13px;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+        margin-top: 16px;
+        width: 100%;
+    }
+
+    .btn-gradient:hover {
+        opacity: 0.92;
+    }
+
+    @media (max-width: 990px) {
+        .dash-grid-2 { grid-template-columns: 1fr; }
     }
 </style>
 
-<div class="admin-dashboard-page">
-    <div class="dashboard-cards">
-        <article class="dashboard-card">
-            <h3>Tổng người dùng</h3>
-            <strong><?= e($total_users) ?></strong>
-        </article>
-        <article class="dashboard-card">
+<div class="dash-container">
+
+    <!-- Top Metrics -->
+    <div class="dash-metrics">
+
+        <div class="dash-card">
+            <h3>Khách hàng</h3>
+            <div class="value"><?= e($total_users) ?></div>
+            <div class="subtext">
+                <span style="color:#10b981;font-weight:800"><?= e($active_users) ?></span> đang hoạt động
+            </div>
+        </div>
+
+        <div class="dash-card">
             <h3>Sản phẩm</h3>
-            <strong><?= e($total_products) ?></strong>
-        </article>
-        <article class="dashboard-card">
-            <h3>Đơn hàng</h3>
-            <strong><?= e($total_orders) ?></strong>
-        </article>
-        <article class="dashboard-card">
+            <div class="value"><?= e($total_products) ?></div>
+            <div class="subtext">
+                Thuộc <strong><?= e($category_count) ?></strong> danh mục
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <h3>Tổng đơn hàng</h3>
+            <div class="value"><?= e($total_orders) ?></div>
+            <div class="subtext">
+                <span style="color:#10b981;font-weight:800"><?= e($completed_orders) ?></span> hoàn thành
+            </div>
+        </div>
+
+        <div class="dash-card">
             <h3>Đơn chờ xử lý</h3>
-            <strong><?= e($pending_orders) ?></strong>
-        </article>
-        <article class="dashboard-card">
+            <div class="value" style="color:#e11d48"><?= e($pending_orders) ?></div>
+            <div class="subtext" style="color:#e11d48">
+                Cần xác nhận ngay
+            </div>
+        </div>
+
+        <div class="dash-card">
             <h3>Doanh thu</h3>
-            <strong><?= e(number_format($total_revenue, 0, ',', '.')) ?>đ</strong>
-        </article>
-        <article class="dashboard-card">
-            <h3>Đánh giá</h3>
-            <strong><?= e($review_average) ?>/5</strong>
-        </article>
-    </div>
-
-    <div class="dashboard-actions">
-        <a class="dashboard-action" href="<?= BASE_URL ?>?action=admin-users">
-            <h4>Quản lý người dùng</h4>
-            <p>Xem và quản lý tài khoản khách hàng và admin.</p>
-        </a>
-        <a class="dashboard-action" href="<?= BASE_URL ?>?action=admin-products">
-            <h4>Quản lý sản phẩm</h4>
-            <p>Thêm, chỉnh sửa và lọc sản phẩm theo danh mục.</p>
-        </a>
-        <a class="dashboard-action" href="<?= BASE_URL ?>?action=admin-orders">
-            <h4>Quản lý đơn hàng</h4>
-            <p>Xem trạng thái và chi tiết đơn hàng của khách.</p>
-        </a>
-    </div>
-
-    <div class="dashboard-detail-grid">
-        <article class="dashboard-summary-card">
-            <h4>Danh mục sản phẩm</h4>
-            <div class="dashboard-list">
-                <?php if (!empty($categories)): ?>
-                    <?php foreach ($categories as $category): ?>
-                        <div class="dashboard-category-item">
-                            <div class="dashboard-category-head">
-                                <span><?= e($category['name']) ?></span>
-                                <span><?= e($category['count']) ?> sản phẩm</span>
-                            </div>
-                            <?php if (!empty($category['description'])): ?>
-                                <div class="dashboard-category-desc">
-                                    <?= e($category['description']) ?>
-                                </div>
-                            <?php endif; ?>
-                            <div class="dashboard-progress">
-                                <span style="width: <?= e($category['percent']) ?>%"></span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="dashboard-category-item">
-                        <span>Không tìm thấy danh mục sản phẩm. Vui lòng kiểm tra dữ liệu `categories` hoặc `products`.</span>
-                    </div>
-                <?php endif; ?>
+            <div class="value" style="font-size:26px;color:#059669"><?= number_format($total_revenue, 0, ',', '.') ?>đ</div>
+            <div class="subtext" style="color:#059669">
+                Từ đơn hoàn thành
             </div>
-        </article>
+        </div>
 
-        <article class="dashboard-summary-card">
-            <h4>Đánh giá gần đây <span class="dashboard-badge"><?= e($review_count) ?> đánh giá</span></h4>
-            <div class="dashboard-list">
-                <?php if (!empty($reviews)): ?>
-                    <?php foreach ($reviews as $review): ?>
-                        <div class="dashboard-review-item">
-                            <strong><?= e($review['customer'] ?? 'Khách hàng ẩn danh') ?></strong>
-                            <div class="dashboard-rating">★ <?= e($review['rating'] ?? 0) ?>/5</div>
-                            <span><?= e($review['comment'] ?? 'Không có nội dung review.') ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="dashboard-review-item">
-                        <span>Chưa có đánh giá nào để hiển thị.</span>
-                    </div>
-                <?php endif; ?>
+        <div class="dash-card">
+            <h3>Đánh giá TB</h3>
+            <div class="value" style="color:#0891b2"><?= e($review_average) ?><span style="font-size:16px;color:#94a3b8">/5</span></div>
+            <div class="subtext">
+                Tổng <strong><?= e($review_count) ?></strong> nhận xét
             </div>
-            <a class="dashboard-link-btn" href="<?= BASE_URL ?>?action=admin-reviews">Đi tới quản lý đánh giá</a>
-        </article>
+        </div>
+
     </div>
 
-    <article class="dashboard-summary-card">
-        <h4>Hoạt động gần đây</h4>
-        <div class="dashboard-list">
-            <?php if (!empty($recentActivity)): ?>
-                <?php foreach ($recentActivity as $activity): ?>
-                    <div class="dashboard-activity-item">
-                        <strong><?= e($activity['title']) ?></strong>
-                        <span><?= e($activity['meta']) ?> · <?= e($activity['time']) ?></span>
+    <!-- Quick Navigation Links -->
+    <div class="dash-quick-links">
+        <a class="quick-link-card" href="<?= BASE_URL ?>?action=admin-users">
+            <div>
+                <div class="quick-link-title">Quản lý người dùng</div>
+                <div class="quick-link-sub">Xem, phân quyền và khóa tài khoản</div>
+            </div>
+            <div class="quick-link-arrow">→</div>
+        </a>
+
+        <a class="quick-link-card" href="<?= BASE_URL ?>?action=admin-products">
+            <div>
+                <div class="quick-link-title">Quản lý sản phẩm</div>
+                <div class="quick-link-sub">Thêm sản phẩm, cập nhật size & tồn kho</div>
+            </div>
+            <div class="quick-link-arrow">→</div>
+        </a>
+
+        <a class="quick-link-card" href="<?= BASE_URL ?>?action=admin-orders">
+            <div>
+                <div class="quick-link-title">Quản lý đơn hàng</div>
+                <div class="quick-link-sub">Cập nhật trạng thái giao hàng</div>
+            </div>
+            <div class="quick-link-arrow">→</div>
+        </a>
+    </div>
+
+    <!-- Detail Grid: Categories & Reviews -->
+    <div class="dash-grid-2">
+
+        <!-- Categories Distribution -->
+        <div class="dash-panel">
+            <div class="dash-panel-header">
+                <h3>Phân loại sản phẩm</h3>
+                <span style="font-size:13px;font-weight:700;color:#6366f1"><?= count($categories) ?> Danh mục</span>
+            </div>
+
+            <?php if (!empty($categories)): ?>
+                <?php
+                    $sumProdCount = 0;
+                    foreach ($categories as $c) {
+                        $sumProdCount += (int) ($c['product_count'] ?? $c['count'] ?? 0);
+                    }
+                ?>
+                <?php foreach ($categories as $category): ?>
+                    <?php
+                        $cCount   = (int) ($category['product_count'] ?? $category['count'] ?? 0);
+                        $cPercent = ($sumProdCount > 0) ? round(($cCount / $sumProdCount) * 100) : 0;
+                    ?>
+                    <div class="cat-progress-item">
+                        <div class="cat-progress-info">
+                            <span><?= e($category['name']) ?></span>
+                            <span style="color:#64748b"><?= $cCount ?> sản phẩm (<?= $cPercent ?>%)</span>
+                        </div>
+                        <div class="cat-bar-wrap">
+                            <div class="cat-bar-fill" style="width: <?= $cPercent ?>%"></div>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="dashboard-activity-item">
-                    <span>Chưa có hoạt động mới.</span>
-                </div>
+                <p style="color:#94a3b8;font-size:14px;text-align:center">Chưa có danh mục nào.</p>
             <?php endif; ?>
+
+            <a class="btn-gradient" href="<?= BASE_URL ?>?action=admin-categories">Quản lý danh mục →</a>
         </div>
-        <a class="dashboard-link-btn" href="<?= BASE_URL ?>?action=admin-orders">Xem đơn hàng</a>
-    </article>
+
+        <!-- Recent Reviews -->
+        <div class="dash-panel">
+            <div class="dash-panel-header">
+                <h3>Đánh giá gần đây</h3>
+                <span style="font-size:13px;font-weight:700;color:#0891b2"><?= e($review_count) ?> nhận xét</span>
+            </div>
+
+            <?php if (!empty($reviews)): ?>
+                <?php foreach ($reviews as $review): ?>
+                    <?php
+                        $rCustomer = $review['user_name'] ?? $review['customer'] ?? 'Khách hàng';
+                        $rProduct  = $review['product_name'] ?? '';
+                        $rRating   = (int) ($review['so_sao'] ?? $review['rating'] ?? 5);
+                        $rComment  = $review['noi_dung'] ?? $review['comment'] ?? 'Không có nội dung.';
+                        $rDate     = !empty($review['created_at']) ? date('d/m/Y H:i', strtotime($review['created_at'])) : '';
+                    ?>
+                    <div class="rev-item">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <strong style="color:#0f172a;font-size:14px"><?= e($rCustomer) ?></strong>
+                            <div style="color:#f59e0b;font-weight:800;font-size:13px">
+                                <?= $rRating ?>/5 sao
+                            </div>
+                        </div>
+                        <?php if ($rProduct !== ''): ?>
+                            <div style="font-size:12px;color:#6366f1;font-weight:700;margin-top:2px">
+                                <?= e($rProduct) ?>
+                            </div>
+                        <?php endif; ?>
+                        <p style="margin:4px 0 0;font-size:13px;color:#475569;line-height:1.4">
+                            "<?= e($rComment) ?>"
+                        </p>
+                        <?php if ($rDate !== ''): ?>
+                            <small style="font-size:11px;color:#94a3b8;display:block;margin-top:4px"><?= e($rDate) ?></small>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="color:#94a3b8;font-size:14px;text-align:center">Chưa có đánh giá nào.</p>
+            <?php endif; ?>
+
+            <a class="btn-gradient" href="<?= BASE_URL ?>?action=admin-reviews">Tất cả đánh giá →</a>
+        </div>
+
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="dash-panel">
+        <div class="dash-panel-header">
+            <h3>Hoạt động đơn hàng gần đây</h3>
+            <a href="<?= BASE_URL ?>?action=admin-orders" style="color:#6366f1;font-weight:700;font-size:13px;text-decoration:none">Xem tất cả đơn hàng →</a>
+        </div>
+
+        <?php if (!empty($recentActivity)): ?>
+            <div style="display:grid;gap:12px">
+                <?php foreach ($recentActivity as $act): ?>
+                    <div style="padding:14px 18px;border-radius:14px;background:#f8fafc;border:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+                        <div>
+                            <strong style="color:#0f172a;font-size:14px;display:block"><?= e($act['title']) ?></strong>
+                            <span style="font-size:12px;color:#64748b"><?= e($act['time']) ?></span>
+                        </div>
+                        <span style="font-weight:800;color:#db2777;font-size:15px"><?= e($act['meta']) ?></span>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p style="color:#94a3b8;font-size:14px;text-align:center">Chưa có hoạt động nào mới.</p>
+        <?php endif; ?>
+    </div>
+
 </div>

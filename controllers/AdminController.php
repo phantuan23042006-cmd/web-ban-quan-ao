@@ -46,8 +46,36 @@ class AdminController
     public function index()
     {
         $dashboardMetrics = $this->userModel->getDashboardMetrics();
-        $products = $this->productModel->getAllAdmin([], 1, 5)['items'] ?? [];
-        $categories = $this->categoryModel->getAll();
+        $stats            = $dashboardMetrics['stats'] ?? $this->userModel->getUserStatistics();
+        $overview         = [
+            'total_products'   => $dashboardMetrics['total_products'] ?? 0,
+            'total_orders'     => $dashboardMetrics['total_orders'] ?? 0,
+            'pending_orders'   => $dashboardMetrics['pending_orders'] ?? 0,
+            'completed_orders' => $dashboardMetrics['completed_orders'] ?? 0,
+            'total_revenue'    => $dashboardMetrics['total_revenue'] ?? 0,
+        ];
+        $categories       = $this->categoryModel->getAll();
+        $reviewData       = $this->reviewModel->getAllAdmin([], 1, 5);
+        $reviews          = $reviewData['items'] ?? [];
+        $reviewCount      = $reviewData['total_items'] ?? count($reviews);
+
+        $avgRow           = $this->reviewModel->getAverageRatingAll();
+        $reviewAverage   = $avgRow['avg_stars'] ?? 0.0;
+        if ($reviewAverage == 0 && !empty($reviews)) {
+            $sum = array_sum(array_column($reviews, 'so_sao'));
+            $reviewAverage = round($sum / count($reviews), 1);
+        }
+
+        // Recent orders activity
+        $recentOrders     = (new Order())->getAllAdmin();
+        $recentActivity   = [];
+        foreach (array_slice($recentOrders, 0, 5) as $o) {
+            $recentActivity[] = [
+                'title' => 'Đơn hàng ' . ($o['order_code'] ?? ('#' . $o['id'])) . ' - ' . ($o['customer_name'] ?? 'Khách hàng'),
+                'meta'  => number_format($o['total_amount'] ?? 0, 0, ',', '.') . 'đ',
+                'time'  => date('d/m/Y H:i', strtotime($o['created_at'] ?? 'now')),
+            ];
+        }
 
         $title = 'Dashboard Admin';
         $view = 'admin/dashboard';
@@ -392,13 +420,19 @@ class AdminController
         }
 
         // Upload ảnh nếu có
-        $imageName = $this->handleImageUpload('anh');
+        try {
+            $imageName = $this->handleImageUpload('anh');
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Ảnh không hợp lệ: ' . $e->getMessage();
+            header('Location: ' . BASE_URL . '?action=admin-product-create');
+            exit;
+        }
 
         try {
             $productId = $this->productModel->createProductWithDetails([
                 'name'             => $name,
-                'gioi_thieu'        => $gioiThieu,
-                'anh'               => $imageName,
+                'gioi_thieu'       => $gioiThieu,
+                'anh'              => $imageName,
                 'danh_muc_id'      => $danhMucId,
                 'noi_nhap_hang_id' => $noiNhapHangId,
             ], $rawVariants);
@@ -458,14 +492,25 @@ class AdminController
         }
 
         // Upload ảnh mới nếu người dùng chọn
-        $newImage = $this->handleImageUpload('anh');
+        try {
+            $newImage = $this->handleImageUpload('anh');
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = 'Ảnh không hợp lệ: ' . $e->getMessage();
+            header('Location: ' . BASE_URL . '?action=admin-product-edit&id=' . $id);
+            exit;
+        }
+
+        // Nếu có ảnh mới: xóa ảnh cũ khỏi disk
+        if ($newImage !== null && !empty($existingProduct['anh'])) {
+            $this->deleteOldImage($existingProduct['anh']);
+        }
         $imageName = $newImage !== null ? $newImage : $existingProduct['anh'];
 
         try {
             $this->productModel->updateProductWithDetails($id, [
                 'name'             => $name,
-                'gioi_thieu'        => $gioiThieu,
-                'anh'               => $imageName,
+                'gioi_thieu'       => $gioiThieu,
+                'anh'              => $imageName,
                 'danh_muc_id'      => $danhMucId,
                 'noi_nhap_hang_id' => $noiNhapHangId,
             ], $rawVariants);
@@ -583,37 +628,105 @@ class AdminController
         exit;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | XỬ LÝ UPLOAD ANH
-    |--------------------------------------------------------------------------
-    */
-    private function handleImageUpload($field = 'anh'): ?string
+    /**
+     * Xử lý upload ảnh sản phẩm.
+     *
+     * Kiểm tra:
+     *  - File được chọn và upload thành công
+     *  - Đuôi file hợp lệ (jpg, png, webp, gif)
+     *  - MIME type thật (finfo) — ngăn spoof file
+     *  - Kích thước ≤ 5 MB
+     *  - Lưu vào assets/uploads/ với tên ngẫu nhiên
+     *
+     * @param  string      $field  Tên field trong $_FILES
+     * @return string|null         Tên file mới nếu upload thành công, null nếu không có file
+     * @throws Exception           Nếu file không hợp lệ
+     */
+    private function handleImageUpload(string $field = 'anh'): ?string
     {
-        if (empty($_FILES[$field]) || $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
+        // Không có file nào được chọn
+        if (empty($_FILES[$field]) || $_FILES[$field]['error'] === UPLOAD_ERR_NO_FILE) {
             return null;
         }
 
         $file = $_FILES[$field];
+
+        // Lỗi upload từ PHP
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $uploadErrors = [
+                UPLOAD_ERR_INI_SIZE   => 'File quá lớn (vượt giới hạn server).',
+                UPLOAD_ERR_FORM_SIZE  => 'File quá lớn (vượt giới hạn form).',
+                UPLOAD_ERR_PARTIAL    => 'Upload không hoàn chỉnh. Vui lòng thử lại.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Thư mục tạm không tồn tại.',
+                UPLOAD_ERR_CANT_WRITE => 'Không thể ghi file lên đĩa.',
+                UPLOAD_ERR_EXTENSION  => 'Upload bị chặn bởi extension.',
+            ];
+            $msg = $uploadErrors[$file['error']] ?? 'Lỗi upload không xác định (mã ' . $file['error'] . ').';
+            throw new Exception($msg);
+        }
+
+        // Giới hạn kích thước: 5 MB
+        $maxBytes = 5 * 1024 * 1024;
+        if ($file['size'] > $maxBytes) {
+            throw new Exception('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 5 MB.');
+        }
+
+        // Kiểm tra đuôi file
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-
         if (!in_array($ext, $allowedExts, true)) {
-            throw new Exception("Định dạng file ảnh không hợp lệ. Chỉ chấp nhận JPG, PNG, WEBP, GIF.");
+            throw new Exception('Định dạng file không hợp lệ. Chỉ chấp nhận: JPG, PNG, WEBP, GIF.');
         }
 
+        // Kiểm tra MIME type thật (tránh spoof file)
+        $allowedMimes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+        ];
+        if (function_exists('finfo_open')) {
+            $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            if (!in_array($mimeType, $allowedMimes, true)) {
+                throw new Exception('Nội dung file không phải ảnh hợp lệ. Vui lòng chọn ảnh JPG/PNG/WEBP/GIF.');
+            }
+        }
+
+        // Tạo thư mục nếu chưa có
         if (!is_dir(PATH_ASSETS_UPLOADS)) {
-            mkdir(PATH_ASSETS_UPLOADS, 0777, true);
+            mkdir(PATH_ASSETS_UPLOADS, 0755, true);
         }
 
-        $newFileName = 'prod_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $targetPath = PATH_ASSETS_UPLOADS . $newFileName;
+        // Tên file ngẫu nhiên an toàn
+        $newFileName = 'prod_' . date('Ymd') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $targetPath  = PATH_ASSETS_UPLOADS . $newFileName;
 
-        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            return $newFileName;
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            throw new Exception('Không thể lưu ảnh. Kiểm tra quyền ghi thư mục assets/uploads/');
         }
 
-        return null;
+        return $newFileName;
+    }
+
+    /**
+     * Xóa file ảnh cũ khỏi disk an toàn (chỉ xóa file trong uploads/).
+     */
+    private function deleteOldImage(?string $fileName): void
+    {
+        if ($fileName === null || trim($fileName) === '') {
+            return;
+        }
+
+        // Chỉ cho phép tên file đơn giản (không có path traversal)
+        $baseName = basename($fileName);
+        $fullPath = rtrim(PATH_ASSETS_UPLOADS, '/\\') . DIRECTORY_SEPARATOR . $baseName;
+
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 
     /*
@@ -624,13 +737,59 @@ class AdminController
 public function orders()
 {
     $keyword = trim($_GET['keyword'] ?? '');
-    $status = trim($_GET['filter_status'] ?? '');
-    $orders = array_map(static fn($o) => ['id'=>$o['id'],'customer'=>$o['customer_name'],'date'=>$o['created_at'],'status'=>$o['status'],'total'=>number_format($o['total_amount'],0,',','.').'đ'], (new Order())->getAllAdmin());
-    if ($keyword !== '') $orders = array_values(array_filter($orders, static fn($o) => stripos($o['customer'], $keyword) !== false || stripos((string)$o['id'], $keyword) !== false));
-    if ($status !== '') $orders = array_values(array_filter($orders, static fn($o) => $o['status'] === $status));
-    $page = 1; $totalPages = 1;
-    $title = 'Quản lý đơn hàng';
-    $view = 'admin/orders';
+    $status  = trim($_GET['filter_status'] ?? '');
+    $rawOrders = (new Order())->getAllAdmin();
+
+    $orders = array_map(static function ($o) {
+        return [
+            'id'            => $o['id'],
+            'order_code'    => $o['order_code'] ?? ('DH' . $o['id']),
+            'customer'      => $o['customer_name'] ?? 'N/A',
+            'date'          => $o['created_at'],
+            'status'        => $o['status'],
+            'total_raw'     => $o['total_amount'],
+            'total'         => number_format($o['total_amount'], 0, ',', '.') . 'đ',
+        ];
+    }, $rawOrders);
+
+    if ($keyword !== '') {
+        $orders = array_values(array_filter($orders, static fn($o) =>
+            stripos($o['customer'], $keyword) !== false ||
+            stripos((string) $o['id'], $keyword) !== false ||
+            stripos((string) ($o['order_code'] ?? ''), $keyword) !== false
+        ));
+    }
+
+    if ($status !== '') {
+        $orders = array_values(array_filter($orders, static fn($o) => $o['status'] === $status));
+    }
+
+    $page        = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage     = 10;
+    $totalOrders = count($orders);
+    $totalPages  = max(1, (int) ceil($totalOrders / $perPage));
+    $orders      = array_slice($orders, ($page - 1) * $perPage, $perPage);
+
+    $title  = 'Quản lý đơn hàng';
+    $view   = 'admin/orders';
+    $layout = 'admin';
+
+    require PATH_VIEW_MAIN;
+}
+
+public function orderDetail()
+{
+    $id = (int) ($_GET['id'] ?? 0);
+    $order = (new Order())->findForAdmin($id);
+
+    if (!$order) {
+        $_SESSION['error_message'] = 'Đơn hàng không tồn tại.';
+        header('Location: ' . BASE_URL . '?action=admin-orders');
+        exit;
+    }
+
+    $title  = 'Chi tiết đơn hàng: ' . ($order['order_code'] ?? ('#' . $order['id']));
+    $view   = 'admin/order_detail';
     $layout = 'admin';
 
     require PATH_VIEW_MAIN;
@@ -638,9 +797,24 @@ public function orders()
 
 public function updateOrderStatus()
 {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_validate($_POST['csrf_token'] ?? null)) { header('Location: ' . BASE_URL . '?action=admin-orders'); exit; }
-    (new Order())->updateStatus((int)($_POST['order_id'] ?? 0), (string)($_POST['status'] ?? 'pending'));
-    header('Location: ' . BASE_URL . '?action=admin-orders'); exit;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_validate($_POST['csrf_token'] ?? null)) {
+        header('Location: ' . BASE_URL . '?action=admin-orders');
+        exit;
+    }
+
+    $orderId = (int) ($_POST['order_id'] ?? 0);
+    $status  = (string) ($_POST['status'] ?? 'pending');
+
+    try {
+        (new Order())->updateStatus($orderId, $status);
+        $_SESSION['success_message'] = 'Đã cập nhật trạng thái đơn hàng #' . $orderId;
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Lỗi cập nhật: ' . $e->getMessage();
+    }
+
+    $returnUrl = $_POST['return_url'] ?? (BASE_URL . '?action=admin-orders');
+    header('Location: ' . $returnUrl);
+    exit;
 }
 
 /*
@@ -801,4 +975,149 @@ public function resetUserPassword()
 
     exit;
 }
+
+/*
+|--------------------------------------------------------------------------
+| CẬP NHẬT TRẠNG THÁI TÀI KHOẢN (khóa / mở khóa)
+|--------------------------------------------------------------------------
+*/
+public function updateUserStatus()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+        $_SESSION['error_message'] = 'Yêu cầu không hợp lệ (CSRF).';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    $userId = (int) ($_POST['user_id'] ?? 0);
+    $status = trim($_POST['status'] ?? '');
+    $allowedStatuses = ['active', 'blocked'];
+
+    if ($userId <= 0 || !in_array($status, $allowedStatuses, true)) {
+        $_SESSION['error_message'] = 'Dữ liệu không hợp lệ.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    // Không cho phép admin tự khóa tài khoản của chính mình
+    if ($userId === (int) ($_SESSION['user']['id'] ?? 0)) {
+        $_SESSION['error_message'] = 'Bạn không thể thay đổi trạng thái tài khoản của chính mình.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    $user = $this->userModel->findById($userId);
+
+    if (!$user) {
+        $_SESSION['error_message'] = 'Không tìm thấy tài khoản.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    try {
+        $updated = $this->userModel->updateStatus($userId, $status);
+
+        if ($updated) {
+            $statusLabel = $status === 'active' ? 'mở khóa' : 'khóa';
+            $_SESSION['success_message'] =
+                "Đã {$statusLabel} tài khoản \"" .
+                ($user['full_name'] ?? $user['email']) .
+                "\" thành công.";
+        } else {
+            $_SESSION['error_message'] = 'Không thể cập nhật trạng thái tài khoản.';
+        }
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Lỗi: ' . $e->getMessage();
+    }
+
+    // Giữ lại bộ lọc hiện tại sau khi redirect
+    $query = array_filter([
+        'action'        => 'admin-users',
+        'keyword'       => $_POST['return_keyword']       ?? '',
+        'filter_role'   => $_POST['return_role']          ?? '',
+        'filter_status' => $_POST['return_status']        ?? '',
+        'page'          => (int) ($_POST['return_page']   ?? 1),
+    ], static fn($v) => $v !== '' && $v !== null);
+
+    header('Location: ' . BASE_URL . '?' . http_build_query($query));
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| CẬP NHẬT VAI TRÒ TÀI KHOẢN (user ↔ admin)
+|--------------------------------------------------------------------------
+*/
+public function updateUserRole()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+        $_SESSION['error_message'] = 'Yêu cầu không hợp lệ (CSRF).';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    $userId = (int) ($_POST['user_id'] ?? 0);
+    $role   = trim($_POST['role'] ?? '');
+    $allowedRoles = ['user', 'admin'];
+
+    if ($userId <= 0 || !in_array($role, $allowedRoles, true)) {
+        $_SESSION['error_message'] = 'Dữ liệu không hợp lệ.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    // Không cho phép admin tự hạ quyền của chính mình
+    if ($userId === (int) ($_SESSION['user']['id'] ?? 0)) {
+        $_SESSION['error_message'] = 'Bạn không thể thay đổi vai trò của chính mình.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    $user = $this->userModel->findById($userId);
+
+    if (!$user) {
+        $_SESSION['error_message'] = 'Không tìm thấy tài khoản.';
+        header('Location: ' . BASE_URL . '?action=admin-users');
+        exit;
+    }
+
+    try {
+        $updated = $this->userModel->updateRole($userId, $role);
+
+        if ($updated) {
+            $roleLabel = $role === 'admin' ? 'Quản trị viên' : 'Người dùng';
+            $_SESSION['success_message'] =
+                "Đã cập nhật vai trò tài khoản \"" .
+                ($user['full_name'] ?? $user['email']) .
+                "\" thành {$roleLabel}.";
+        } else {
+            $_SESSION['error_message'] = 'Không thể cập nhật vai trò tài khoản.';
+        }
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Lỗi: ' . $e->getMessage();
+    }
+
+    // Giữ lại bộ lọc hiện tại sau khi redirect
+    $query = array_filter([
+        'action'        => 'admin-users',
+        'keyword'       => $_POST['return_keyword']       ?? '',
+        'filter_role'   => $_POST['return_role']          ?? '',
+        'filter_status' => $_POST['return_status']        ?? '',
+        'page'          => (int) ($_POST['return_page']   ?? 1),
+    ], static fn($v) => $v !== '' && $v !== null);
+
+    header('Location: ' . BASE_URL . '?' . http_build_query($query));
+    exit;
+}
+
 }

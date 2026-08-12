@@ -3,6 +3,7 @@ session_start();
 
 require __DIR__ . '/configs/env.php';
 require __DIR__ . '/configs/csrf.php';
+require __DIR__ . '/configs/helper.php';
 require __DIR__ . '/models/BaseModel.php';
 require __DIR__ . '/models/User.php';
 require __DIR__ . '/models/Category.php';

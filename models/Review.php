@@ -51,6 +51,26 @@ class Review extends BaseModel
     }
 
     /**
+     * Lấy điểm đánh giá trung bình của toàn bộ cửa hàng.
+     */
+    public function getAverageRatingAll(): array
+    {
+        $sql = "
+            SELECT 
+                COALESCE(AVG(so_sao), 0) AS avg_stars,
+                COUNT(*) AS total_reviews
+            FROM {$this->table}
+        ";
+        $stmt = $this->pdo->query($sql);
+        $result = $stmt->fetch();
+
+        return [
+            'avg_stars'     => round((float) ($result['avg_stars'] ?? 0), 1),
+            'total_reviews' => (int) ($result['total_reviews'] ?? 0),
+        ];
+    }
+
+    /**
      * Lấy danh sách đánh giá phục vụ trang quản trị (Admin) có phân trang và bộ lọc.
      */
     public function getAllAdmin($filters = [], $page = 1, $perPage = 10)

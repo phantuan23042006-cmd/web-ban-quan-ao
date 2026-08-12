@@ -20,6 +20,23 @@ class Order extends BaseModel
     public function getByUser(int $userId): array {$s=$this->pdo->prepare('SELECT * FROM orders WHERE user_id=:id ORDER BY id DESC');$s->execute([':id'=>$userId]);return $s->fetchAll();}
     public function findForUser(int $id,int $userId): ?array {$s=$this->pdo->prepare('SELECT * FROM orders WHERE id=:id AND user_id=:user_id');$s->execute([':id'=>$id,':user_id'=>$userId]);$o=$s->fetch();if(!$o)return null;$i=$this->pdo->prepare('SELECT * FROM order_items WHERE order_id=:id ORDER BY id');$i->execute([':id'=>$id]);$o['items']=$i->fetchAll();return $o;}
     public function getAllAdmin(): array {return $this->pdo->query('SELECT o.*,u.full_name AS customer_name FROM orders o JOIN users u ON u.id=o.user_id ORDER BY o.id DESC')->fetchAll();}
-    public function updateStatus(int $id,string $status): bool {if(!in_array($status,['pending','confirmed','shipping','completed','cancelled'],true))throw new InvalidArgumentException('Trạng thái không hợp lệ.');$s=$this->pdo->prepare('UPDATE orders SET status=:status WHERE id=:id');return $s->execute([':id'=>$id,':status'=>$status]);}
-    public function canReview(int $userId,int $productId): bool {$s=$this->pdo->prepare("SELECT 1 FROM orders o JOIN order_items i ON i.order_id=o.id WHERE o.user_id=:user AND i.san_pham_id=:product AND o.status='completed' LIMIT 1");$s->execute([':user'=>$userId,':product'=>$productId]);return(bool)$s->fetchColumn();}
+    public function updateStatus(int $id,string $status): bool {if(!in_array($status,['pending','confirmed','completed','cancelled'],true))throw new InvalidArgumentException('Trạng thái không hợp lệ.');$s=$this->pdo->prepare('UPDATE orders SET status=:status WHERE id=:id');return $s->execute([':id'=>$id,':status'=>$status]);}
+    public function canReview(int $userId, int $productId): bool
+    {
+        $s = $this->pdo->prepare("SELECT 1 FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.user_id = :user AND i.san_pham_id = :product AND o.status = 'completed' LIMIT 1");
+        $s->execute([':user' => $userId, ':product' => $productId]);
+        return (bool) $s->fetchColumn();
+    }
+
+    public function findForAdmin(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT o.*, u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone FROM orders o LEFT JOIN users u ON u.id = o.user_id WHERE o.id = :id LIMIT 1');
+        $stmt->execute([':id' => $id]);
+        $order = $stmt->fetch();
+        if (!$order) return null;
+        $items = $this->pdo->prepare('SELECT * FROM order_items WHERE order_id = :id ORDER BY id ASC');
+        $items->execute([':id' => $id]);
+        $order['items'] = $items->fetchAll();
+        return $order;
+    }
 }

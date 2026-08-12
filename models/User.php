@@ -577,10 +577,11 @@ public function getUserStatistics()
 public function getDashboardMetrics(): array
 {
     $stats = $this->getUserStatistics();
+    $prodTable = $this->tableExists('san_pham') ? 'san_pham' : 'products';
 
     return [
         'stats' => $stats,
-        'total_products' => $this->countTableRows('products'),
+        'total_products' => $this->countTableRows($prodTable),
         'total_orders' => $this->countTableRows('orders'),
         'pending_orders' => $this->countOrdersByStatus([
             'pending',

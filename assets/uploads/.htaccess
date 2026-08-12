@@ -1,0 +1,7 @@
+# Ngăn trình duyệt liệt kê file trong thư mục
+Options -Indexes
+
+# Chặn thực thi PHP và script trong thư mục uploads
+<FilesMatch "\.(php|php3|php4|php5|php7|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Require all denied
+</FilesMatch>

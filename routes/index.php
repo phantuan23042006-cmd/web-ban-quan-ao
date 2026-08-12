@@ -31,6 +31,21 @@ function routeRedirect(string $action = ''): void
 function routeRequireLogin(): void
 {
     if (!empty($_SESSION['user'])) {
+        $userId = (int) ($_SESSION['user']['id'] ?? 0);
+        $userExists = (new User())->findById($userId);
+
+        if ($userExists && ($userExists['status'] ?? '') === 'active') {
+            $_SESSION['user']['full_name'] = $userExists['full_name'];
+            $_SESSION['user']['role']      = $userExists['role'];
+            $_SESSION['user']['status']    = $userExists['status'];
+            return;
+        }
+
+        unset($_SESSION['user']);
+        $_SESSION['login_errors'] = [
+            'general' => 'Phiên đăng nhập đã hết hạn hoặc tài khoản không tồn tại. Vui lòng đăng nhập lại.',
+        ];
+        routeRedirect('login');
         return;
     }
 
@@ -255,6 +270,36 @@ switch ($action) {
         (new HomeController())->profile();
         break;
 
+    case 'profile-update':
+        routeRequireLogin();
+
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+
+        (new HomeController())->updateProfile();
+        break;
+
+    case 'change-password':
+        routeRequireLogin();
+
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+
+        (new HomeController())->showChangePassword();
+        break;
+
+    case 'change-password-submit':
+        routeRequireLogin();
+
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+
+        (new HomeController())->changePassword();
+        break;
+
     /*
     |--------------------------------------------------------------------------
     | TRANG QUẢN TRỊ
@@ -335,6 +380,11 @@ switch ($action) {
     case 'admin-order-status':
         routeRequireAdmin();
         (new AdminController())->updateOrderStatus();
+        break;
+
+    case 'admin-order-detail':
+        routeRequireAdmin();
+        (new AdminController())->orderDetail();
         break;
 
 
