@@ -7,7 +7,6 @@
 $statusLabels = [
     'pending'   => ['label' => 'Chờ xác nhận', 'class' => 'status-pending'],
     'confirmed' => ['label' => 'Đã xác nhận',  'class' => 'status-confirmed'],
-    'shipping'  => ['label' => 'Đang giao',    'class' => 'status-shipping'],
     'completed' => ['label' => 'Hoàn thành',   'class' => 'status-completed'],
     'cancelled' => ['label' => 'Đã hủy',       'class' => 'status-cancelled'],
 ];

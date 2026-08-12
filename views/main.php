@@ -111,8 +111,12 @@ if (function_exists('mb_substr')) {
     >
 
     <title>
-        <?= e($title) ?> | Fashion Store
+        <?= e($title) ?> | TAN & TUAN CLOTHING
     </title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -143,10 +147,7 @@ if (function_exists('mb_substr')) {
             min-height: 100vh;
             background: var(--background);
             color: var(--text);
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         a {
@@ -512,13 +513,14 @@ if (function_exists('mb_substr')) {
 
         /*
         |--------------------------------------------------------------------------
-        | ADMIN
+        | ADMIN - ULTRA MODERN DESIGN SYSTEM
         |--------------------------------------------------------------------------
         */
 
         .admin-layout {
             min-height: 100vh;
-            background: #f1f5f9;
+            background: #f4f6fa;
+            color: #1e293b;
         }
 
         .admin-overlay {
@@ -527,6 +529,7 @@ if (function_exists('mb_substr')) {
             z-index: 1040;
             display: none;
             background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
         }
 
         .admin-sidebar {
@@ -537,102 +540,104 @@ if (function_exists('mb_substr')) {
             display: flex;
             flex-direction: column;
             overflow-y: auto;
-            background:
-                linear-gradient(
-                    180deg,
-                    #111827 0%,
-                    #0f172a 100%
-                );
-            color: rgba(255, 255, 255, 0.76);
-            transition: transform 0.25s ease;
+            background: #0b0f19;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            color: #94a3b8;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .admin-brand {
-            min-height: 78px;
-            padding: 0 22px;
+            min-height: 80px;
+            padding: 0 24px;
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom:
-                1px solid
-                rgba(255, 255, 255, 0.09);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
             color: #ffffff;
-            font-size: 19px;
+            font-size: 20px;
             font-weight: 800;
             text-decoration: none;
+            letter-spacing: -0.4px;
+        }
+
+        .admin-brand-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            display: grid;
+            place-items: center;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 900;
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
         }
 
         .admin-label {
-            padding: 24px 24px 8px;
-            color: rgba(255, 255, 255, 0.38);
-            font-size: 10px;
+            padding: 24px 24px 10px;
+            color: #475569;
+            font-size: 11px;
             font-weight: 800;
-            letter-spacing: 1.4px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
         }
 
         .admin-menu {
             margin: 0;
-            padding: 0 13px;
+            padding: 0 16px;
             display: grid;
-            gap: 4px;
+            gap: 5px;
             list-style: none;
         }
 
         .admin-menu a {
-            min-height: 45px;
-            padding: 0 13px;
+            min-height: 48px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
-            gap: 13px;
-            border-radius: 11px;
-            color: rgba(255, 255, 255, 0.7);
+            gap: 14px;
+            border-radius: 14px;
+            color: #94a3b8;
             font-size: 14px;
             font-weight: 650;
             text-decoration: none;
+            transition: all 0.2s ease;
         }
 
         .admin-menu a:hover {
-            background:
-                rgba(255, 255, 255, 0.07);
-            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+            color: #f8fafc;
+            transform: translateX(3px);
         }
 
         .admin-menu a.active {
-            background:
-                linear-gradient(
-                    135deg,
-                    var(--primary),
-                    var(--secondary)
-                );
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: #ffffff;
-            box-shadow:
-                0 8px 20px
-                rgba(124, 58, 237, 0.2);
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.32);
+            transform: translateX(0);
         }
 
         .admin-menu-icon {
-            width: 23px;
+            width: 22px;
             text-align: center;
-            font-size: 17px;
+            font-size: 18px;
         }
 
         .admin-sidebar-bottom {
             margin-top: auto;
-            padding: 18px 13px;
-            border-top:
-                1px solid
-                rgba(255, 255, 255, 0.09);
+            padding: 20px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
         }
 
         .admin-user-box {
-            padding: 11px;
+            padding: 12px 14px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            border-radius: 12px;
-            background:
-                rgba(255, 255, 255, 0.06);
+            gap: 12px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .admin-user-info {
@@ -643,40 +648,41 @@ if (function_exists('mb_substr')) {
         .admin-user-info strong,
         .admin-user-info span {
             display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .admin-user-info strong {
             color: #ffffff;
             font-size: 13px;
+            font-weight: 700;
         }
 
         .admin-user-info span {
-            margin-top: 3px;
-            color: rgba(255, 255, 255, 0.45);
+            margin-top: 2px;
+            color: #64748b;
             font-size: 11px;
+            font-weight: 600;
         }
 
         .admin-wrapper {
             min-height: 100vh;
             margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
         }
 
         .admin-header {
             position: sticky;
             top: 0;
             z-index: 800;
-            min-height: 78px;
-            padding: 0 30px;
+            min-height: 80px;
+            padding: 0 36px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
         }
 
         .admin-header-left,
@@ -692,40 +698,59 @@ if (function_exists('mb_substr')) {
 
         .admin-heading h1 {
             margin: 0;
-            color: var(--dark);
+            color: #0f172a;
             font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
         }
 
         .admin-heading p {
-            margin: 5px 0 0;
-            color: var(--muted);
-            font-size: 12px;
+            margin: 3px 0 0;
+            color: #64748b;
+            font-size: 13px;
         }
 
         .admin-header-link {
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
+            padding: 10px 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
             background: #ffffff;
-            color: #475569;
+            color: #334155;
             font-size: 13px;
             font-weight: 700;
             text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-header-link:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            transform: translateY(-1px);
         }
 
         .admin-logout {
             border-color: #fecdd3;
             background: #fff1f2;
-            color: var(--danger);
+            color: #e11d48;
+        }
+
+        .admin-logout:hover {
+            background: #ffe4e6;
+            border-color: #fda4af;
         }
 
         .admin-content {
-            padding: 30px;
+            padding: 32px 36px;
+            flex: 1;
         }
 
         .admin-content-inner {
             width: 100%;
-            max-width: 1500px;
+            max-width: 1550px;
             margin: 0 auto;
         }
 
@@ -1021,12 +1046,9 @@ if (function_exists('mb_substr')) {
                 class="admin-brand"
                 href="<?= BASE_URL ?>?action=admin-dashboard"
             >
-                <span class="brand-logo">
-                    F
-                </span>
-
-                <span>
-                    Fashion Admin
+                <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN CLOTHING" style="height: 42px; object-fit: contain; border-radius: 8px;">
+                <span style="font-weight: 800; font-size: 17px; letter-spacing: -0.4px;">
+                    TAN & TUAN
                 </span>
             </a>
 
@@ -1043,10 +1065,6 @@ if (function_exists('mb_substr')) {
                         ) ?>"
                         href="<?= BASE_URL ?>?action=admin-dashboard"
                     >
-                        <span class="admin-menu-icon">
-                            ⌂
-                        </span>
-
                         <span>
                             Dashboard
                         </span>
@@ -1067,10 +1085,6 @@ if (function_exists('mb_substr')) {
                         ) ?>"
                         href="<?= BASE_URL ?>?action=admin-users"
                     >
-                        <span class="admin-menu-icon">
-                            ♙
-                        </span>
-
                         <span>
                             Tài khoản
                         </span>
@@ -1082,10 +1096,6 @@ if (function_exists('mb_substr')) {
                         class="<?= menuActive(['admin-products'], $currentAction) ?>"
                         href="<?= BASE_URL ?>?action=admin-products"
                     >
-                        <span class="admin-menu-icon">
-                            ▣
-                        </span>
-
                         <span>
                             Sản phẩm
                         </span>
@@ -1097,10 +1107,6 @@ if (function_exists('mb_substr')) {
                         class="<?= menuActive(['admin-categories'], $currentAction) ?>"
                         href="<?= BASE_URL ?>?action=admin-categories"
                     >
-                        <span class="admin-menu-icon">
-                            ▤
-                        </span>
-
                         <span>
                             Danh mục
                         </span>
@@ -1112,10 +1118,6 @@ if (function_exists('mb_substr')) {
                         class="<?= menuActive(['admin-suppliers', 'admin-supplier-detail'], $currentAction) ?>"
                         href="<?= BASE_URL ?>?action=admin-suppliers"
                     >
-                        <span class="admin-menu-icon">
-                            🏬
-                        </span>
-
                         <span>
                             Nơi nhập hàng
                         </span>
@@ -1127,10 +1129,6 @@ if (function_exists('mb_substr')) {
                         class="<?= menuActive(['admin-orders'], $currentAction) ?>"
                         href="<?= BASE_URL ?>?action=admin-orders"
                     >
-                        <span class="admin-menu-icon">
-                            ▧
-                        </span>
-
                         <span>
                             Đơn hàng
                         </span>
@@ -1142,31 +1140,12 @@ if (function_exists('mb_substr')) {
                         class="<?= menuActive(['admin-reviews'], $currentAction) ?>"
                         href="<?= BASE_URL ?>?action=admin-reviews"
                     >
-                        <span class="admin-menu-icon">
-                            ★
-                        </span>
-
                         <span>
                             Đánh giá
                         </span>
                     </a>
                 </li>
 
-                <li>
-                    <a
-                        class="removed-menu-item"
-                        href="#"
-                        hidden
-                    >
-                        <span class="admin-menu-icon">
-                            🧾
-                        </span>
-
-                        <span>
-                            Thống kê
-                        </span>
-                    </a>
-                </li>
             </ul>
 
             <div class="admin-sidebar-bottom">
@@ -1298,12 +1277,9 @@ if (function_exists('mb_substr')) {
                     class="brand"
                     href="<?= BASE_URL ?>"
                 >
-                    <span class="brand-logo">
-                        F
-                    </span>
-
-                    <span class="brand-text">
-                        Fashion Store
+                    <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN CLOTHING" style="height: 48px; object-fit: contain; vertical-align: middle; border-radius: 6px;">
+                    <span class="brand-text" style="font-weight: 800; color: #0f172a; font-size: 20px; letter-spacing: -0.5px;">
+                        TAN & TUAN
                     </span>
                 </a>
 
@@ -1468,16 +1444,11 @@ if (function_exists('mb_substr')) {
             <div class="container user-footer-main">
 
                 <div>
-                    <div class="footer-brand">
-
-                        <span class="brand-logo">
-                            F
+                    <div class="footer-brand" style="display:flex;align-items:center;gap:12px">
+                        <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN CLOTHING" style="height: 52px; object-fit: contain; background: #fff; padding: 4px 8px; border-radius: 10px; vertical-align: middle;">
+                        <span style="font-weight: 800; font-size: 20px; color: #ffffff; letter-spacing: -0.5px;">
+                            TAN & TUAN
                         </span>
-
-                        <span>
-                            Fashion Store
-                        </span>
-
                     </div>
 
                     <p class="footer-description">

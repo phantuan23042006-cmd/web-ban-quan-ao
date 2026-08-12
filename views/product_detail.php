@@ -410,47 +410,17 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             </h2>
         </div>
 
-        <!-- Form gửi / sửa đánh giá của khách hàng -->
-        <?php if ($currentUser): ?>
-            <div class="review-form-card">
-                <h3 style="margin-top:0; font-size:16px; color:#0f172a;">
-                    <?= $myReview ? 'Sửa đánh giá của bạn' : 'Viết đánh giá của bạn' ?>
-                </h3>
-
-                <form action="<?= BASE_URL ?>?action=<?= $myReview ? 'review-update' : 'review-store' ?>" method="post">
-                    <input type="hidden" name="san_pham_id" value="<?= e($product['id']) ?>">
-                    <?php if ($myReview): ?>
-                        <input type="hidden" name="id" value="<?= e($myReview['id']) ?>">
-                    <?php endif; ?>
-
-                    <div style="margin-bottom: 12px;">
-                        <label style="display:block; font-size:14px; font-weight:600; margin-bottom:6px;">Chọn số sao:</label>
-                        <div class="star-select" id="starSelector">
-                            <span data-star="1">★</span>
-                            <span data-star="2">★</span>
-                            <span data-star="3">★</span>
-                            <span data-star="4">★</span>
-                            <span data-star="5">★</span>
-                        </div>
-                        <input type="hidden" name="so_sao" id="so_sao_input" value="<?= e($myReview['so_sao'] ?? 5) ?>">
-                    </div>
-
-                    <div style="margin-bottom: 16px;">
-                        <label style="display:block; font-size:14px; font-weight:600; margin-bottom:6px;">Nội dung đánh giá:</label>
-                        <textarea name="noi_dung" rows="3" style="width:100%; padding:12px; border-radius:12px; border:1px solid #cbd5e1; font-size:14px;" placeholder="Chia sẻ cảm nhận của bạn về chất lượng sản phẩm, kích thước..."><?= e($myReview['noi_dung'] ?? '') ?></textarea>
-                    </div>
-
-                    <div style="display:flex; gap:10px;">
-                        <button type="submit" class="btn btn-primary"><?= $myReview ? 'Cập nhật đánh giá' : 'Gửi đánh giá' ?></button>
-                        <?php if ($myReview): ?>
-                            <a href="<?= BASE_URL ?>?action=review-delete&id=<?= $myReview['id'] ?>&san_pham_id=<?= $product['id'] ?>" 
-                               class="btn btn-danger"
-                               onclick="return confirm('Bạn có chắc muốn xóa đánh giá của mình không?');">Xóa đánh giá của tôi</a>
-                        <?php endif; ?>
-                    </div>
-                </form>
+        <!-- Gợi ý viết đánh giá -->
+        <div style="background:#f8fafc;border-radius:16px;padding:18px 20px;border:1px dashed #cbd5e1;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:14px">
+                <div style="font-size:28px">⭐</div>
+                <div>
+                    <h4 style="margin:0 0 4px;font-size:15px;color:#0f172a">Bạn đã mua sản phẩm này?</h4>
+                    <p style="margin:0;font-size:13px;color:#64748b">Vào mục <strong>"Đơn hàng của tôi"</strong> ➔ chọn <strong>"Chi tiết đơn hàng"</strong> đã hoàn thành để viết và quản lý nhận xét của bạn.</p>
+                </div>
             </div>
-        <?php endif; ?>
+            <a href="<?= BASE_URL ?>?action=orders" class="btn btn-secondary btn-sm" style="font-weight:700">📦 Đơn hàng của tôi</a>
+        </div>
 
         <!-- Danh sách tất cả đánh giá -->
         <div>

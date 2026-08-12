@@ -382,6 +382,11 @@ switch ($action) {
         (new AdminController())->updateOrderStatus();
         break;
 
+    case 'admin-order-detail':
+        routeRequireAdmin();
+        (new AdminController())->orderDetail();
+        break;
+
 
     case 'admin-categories':
         routeRequireAdmin();

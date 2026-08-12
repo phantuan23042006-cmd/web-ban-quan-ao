@@ -35,10 +35,127 @@ class HomeController
     public function index(): void { $this->requireLogin(); $this->rejectAdmin(); $title='Trang chủ'; $view='user/home'; $layout='user'; $categories=$this->categoryModel->getAll(); $featuredProducts=$this->productModel->getCatalog(['sort'=>'rating'],4); $newProducts=$this->productModel->getCatalog([],8); require PATH_VIEW_MAIN; }
     public function products(): void { $this->requireLogin(); $this->rejectAdmin(); $filters=['keyword'=>trim($_GET['keyword']??''),'danh_muc_id'=>(int)($_GET['category']??$_GET['danh_muc_id']??0),'min_price'=>$_GET['min_price']??'','max_price'=>$_GET['max_price']??'','sort'=>$_GET['sort']??'']; $title='Sản phẩm'; $view='user/products'; $layout='user'; $products=$this->productModel->getCatalog($filters); $categories=$this->categoryModel->getAll(); require PATH_VIEW_MAIN; }
     public function categories(): void { $this->requireLogin(); $this->rejectAdmin(); $title='Danh mục'; $view='user/categories'; $layout='user'; $categories=$this->categoryModel->getAll(); require PATH_VIEW_MAIN; }
-    public function productDetail(): void { $this->requireLogin(); $this->rejectAdmin(); $productId=(int)($_GET['id']??0); $product=$this->productModel->findById($productId); if(!$product){http_response_code(404);$title='Không tìm thấy sản phẩm';$view='errors/404';$layout='user';require PATH_VIEW_MAIN;return;} $reviews=$this->reviewModel->getByProductId($productId);$ratingInfo=$this->reviewModel->getAverageRating($productId);$myReview=null;foreach($reviews as $review){if((int)$review['user_id']===(int)$_SESSION['user']['id']){$myReview=$review;break;}}$title=$product['name'];$view='user/product_detail';$layout='user';require PATH_VIEW_MAIN; }
-    public function storeReview(): void { $this->requireLogin();$productId=(int)($_POST['san_pham_id']??0);try{if(!csrf_validate($_POST['csrf_token']??null)||!$this->orderModel->canReview((int)$_SESSION['user']['id'],$productId))throw new RuntimeException('Chỉ đánh giá sau khi đơn hoàn thành.');$old=$this->reviewModel->findByUserProduct((int)$_SESSION['user']['id'],$productId);if($old)$this->reviewModel->update($old['id'],$_SESSION['user']['id'],$_POST);else $this->reviewModel->create(['san_pham_id'=>$productId,'user_id'=>$_SESSION['user']['id'],'so_sao'=>$_POST['so_sao']??5,'noi_dung'=>$_POST['noi_dung']??'']);$_SESSION['success_message']='Đã lưu đánh giá.';}catch(Throwable $e){$_SESSION['error_message']=$e->getMessage();}header('Location: '.BASE_URL.'?action=product-detail&id='.$productId);exit; }
-    public function updateReview(): void { $this->requireLogin();$productId=(int)($_POST['san_pham_id']??0);$this->reviewModel->update((int)($_POST['id']??0),(int)$_SESSION['user']['id'],$_POST);header('Location: '.BASE_URL.'?action=product-detail&id='.$productId);exit; }
-    public function deleteReview(): void { $this->requireLogin();$productId=(int)($_GET['san_pham_id']??0);$this->reviewModel->delete((int)($_GET['id']??0),(int)$_SESSION['user']['id']);header('Location: '.BASE_URL.'?action=product-detail&id='.$productId);exit; }
+    public function productDetail(): void
+    {
+        $this->requireLogin();
+        $this->rejectAdmin();
+
+        $productId = (int) ($_GET['id'] ?? 0);
+        $product   = $this->productModel->findById($productId);
+
+        if (!$product) {
+            http_response_code(404);
+            $title  = 'Không tìm thấy sản phẩm';
+            $view   = 'errors/404';
+            $layout = 'user';
+            require PATH_VIEW_MAIN;
+            return;
+        }
+
+        $userId     = (int) ($_SESSION['user']['id'] ?? 0);
+        $reviews    = $this->reviewModel->getByProductId($productId);
+        $ratingInfo = $this->reviewModel->getAverageRating($productId);
+
+        $myReview = null;
+        foreach ($reviews as $review) {
+            if ((int) $review['user_id'] === $userId) {
+                $myReview = $review;
+                break;
+            }
+        }
+
+        // Chỉ cho phép đánh giá nếu đã mua sản phẩm và đơn hàng có trạng thái 'completed'
+        $canReview = $this->orderModel->canReview($userId, $productId);
+
+        $title  = $product['name'];
+        $view   = 'user/product_detail';
+        $layout = 'user';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function storeReview(): void
+    {
+        $this->requireLogin();
+        $this->rejectAdmin();
+
+        $productId = (int) ($_POST['san_pham_id'] ?? 0);
+        $userId    = (int) ($_SESSION['user']['id'] ?? 0);
+
+        try {
+            if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+                throw new RuntimeException('Yêu cầu không hợp lệ (CSRF).');
+            }
+
+            if (!$this->orderModel->canReview($userId, $productId)) {
+                throw new RuntimeException('Bạn chỉ có thể gửi đánh giá sau khi đã mua sản phẩm và đơn hàng đã ở trạng thái Hoàn thành.');
+            }
+
+            $old = $this->reviewModel->findByUserProduct($userId, $productId);
+            if ($old) {
+                $this->reviewModel->update($old['id'], $userId, $_POST);
+            } else {
+                $this->reviewModel->create([
+                    'san_pham_id' => $productId,
+                    'user_id'     => $userId,
+                    'so_sao'      => $_POST['so_sao'] ?? 5,
+                    'noi_dung'    => $_POST['noi_dung'] ?? ''
+                ]);
+            }
+            $_SESSION['success_message'] = 'Đã lưu đánh giá sản phẩm thành công.';
+        } catch (Throwable $e) {
+            $_SESSION['error_message'] = $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=product-detail&id=' . $productId);
+        exit;
+    }
+
+    public function updateReview(): void
+    {
+        $this->requireLogin();
+        $this->rejectAdmin();
+
+        $productId = (int) ($_POST['san_pham_id'] ?? 0);
+        $userId    = (int) ($_SESSION['user']['id'] ?? 0);
+        $reviewId  = (int) ($_POST['id'] ?? 0);
+
+        try {
+            if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+                throw new RuntimeException('Yêu cầu không hợp lệ.');
+            }
+            if (!$this->orderModel->canReview($userId, $productId)) {
+                throw new RuntimeException('Bạn không có quyền sửa đánh giá này.');
+            }
+            $this->reviewModel->update($reviewId, $userId, $_POST);
+            $_SESSION['success_message'] = 'Đã cập nhật đánh giá thành công.';
+        } catch (Throwable $e) {
+            $_SESSION['error_message'] = $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=product-detail&id=' . $productId);
+        exit;
+    }
+
+    public function deleteReview(): void
+    {
+        $this->requireLogin();
+        $this->rejectAdmin();
+
+        $productId = (int) ($_GET['san_pham_id'] ?? 0);
+        $userId    = (int) ($_SESSION['user']['id'] ?? 0);
+        $reviewId  = (int) ($_GET['id'] ?? 0);
+
+        try {
+            $this->reviewModel->delete($reviewId, $userId);
+            $_SESSION['success_message'] = 'Đã xóa đánh giá thành công.';
+        } catch (Throwable $e) {
+            $_SESSION['error_message'] = $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '?action=product-detail&id=' . $productId);
+        exit;
+    }
     public function cart(): void { $this->requireLogin();$this->rejectAdmin();$warnings=[];$cartModel=new Cart();$cartItems=$cartModel->getItems($warnings);$totalQuantity=$cartModel->getTotalQuantity();$totalAmount=array_sum(array_column($cartItems,'subtotal'));$title='Giỏ hàng';$view='user/cart';$layout='user';require PATH_VIEW_MAIN; }
     public function addToCart(): void { $this->requireLogin();$productId=(int)($_POST['san_pham_id']??0);try{$result=(new Cart())->add($productId,(int)($_POST['variant_id']??0),(int)($_POST['quantity']??1));$_SESSION['success_message']='Đã thêm '.$result['product_name'].' vào giỏ hàng.';}catch(Throwable $e){$_SESSION['error_message']=$e->getMessage();}header('Location: '.BASE_URL.'?action=product-detail&id='.$productId);exit; }
     public function updateCart(): void { $this->requireLogin();try{(new Cart())->updateQuantity((int)($_POST['variant_id']??$_GET['variant_id']??0),(int)($_POST['quantity']??$_GET['quantity']??0));}catch(Throwable $e){$_SESSION['error_message']=$e->getMessage();}header('Location: '.BASE_URL.'?action=cart');exit; }
@@ -96,7 +213,38 @@ class HomeController
         }
     }
     public function orders(): void { $this->requireLogin();$this->rejectAdmin();$orders=$this->orderModel->getByUser((int)$_SESSION['user']['id']);$title='Đơn hàng của tôi';$view='user/orders';$layout='user';require PATH_VIEW_MAIN; }
-    public function orderDetail(): void {$this->requireLogin();$this->rejectAdmin();$order=$this->orderModel->findForUser((int)($_GET['id']??0),(int)$_SESSION['user']['id']);if(!$order){http_response_code(403);$title='Không có quyền';$view='errors/403';$layout='user';require PATH_VIEW_MAIN;return;}$title='Chi tiết đơn hàng';$view='user/order_detail';$layout='user';require PATH_VIEW_MAIN;}
+    public function orderDetail(): void
+    {
+        $this->requireLogin();
+        $this->rejectAdmin();
+
+        $userId  = (int) ($_SESSION['user']['id'] ?? 0);
+        $orderId = (int) ($_GET['id'] ?? 0);
+        $order   = $this->orderModel->findForUser($orderId, $userId);
+
+        if (!$order) {
+            http_response_code(403);
+            $title  = 'Không có quyền';
+            $view   = 'errors/403';
+            $layout = 'user';
+            require PATH_VIEW_MAIN;
+            return;
+        }
+
+        // Nếu đơn hàng đã hoàn thành, gắn thông tin đánh giá sẵn có (nếu có) cho từng sản phẩm
+        if (($order['status'] ?? '') === 'completed') {
+            foreach ($order['items'] as &$item) {
+                $item['review'] = $this->reviewModel->findByUserProduct($userId, (int) $item['san_pham_id']);
+            }
+            unset($item);
+        }
+
+        $title  = 'Chi tiết đơn hàng ' . ($order['order_code'] ?? ('#' . $order['id']));
+        $view   = 'user/order_detail';
+        $layout = 'user';
+
+        require PATH_VIEW_MAIN;
+    }
     public function profile(): void
     {
         $this->requireLogin();

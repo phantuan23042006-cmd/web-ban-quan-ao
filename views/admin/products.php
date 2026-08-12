@@ -110,8 +110,9 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #7c3aed, #db2777);
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
         color: #ffffff;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
     }
 
     .btn-secondary {

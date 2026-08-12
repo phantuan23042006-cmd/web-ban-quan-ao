@@ -59,6 +59,13 @@ class AdminController
         $reviews          = $reviewData['items'] ?? [];
         $reviewCount      = $reviewData['total_items'] ?? count($reviews);
 
+        $avgRow           = $this->reviewModel->getAverageRatingAll();
+        $reviewAverage   = $avgRow['avg_stars'] ?? 0.0;
+        if ($reviewAverage == 0 && !empty($reviews)) {
+            $sum = array_sum(array_column($reviews, 'so_sao'));
+            $reviewAverage = round($sum / count($reviews), 1);
+        }
+
         // Recent orders activity
         $recentOrders     = (new Order())->getAllAdmin();
         $recentActivity   = [];
@@ -730,13 +737,59 @@ class AdminController
 public function orders()
 {
     $keyword = trim($_GET['keyword'] ?? '');
-    $status = trim($_GET['filter_status'] ?? '');
-    $orders = array_map(static fn($o) => ['id'=>$o['id'],'customer'=>$o['customer_name'],'date'=>$o['created_at'],'status'=>$o['status'],'total'=>number_format($o['total_amount'],0,',','.').'đ'], (new Order())->getAllAdmin());
-    if ($keyword !== '') $orders = array_values(array_filter($orders, static fn($o) => stripos($o['customer'], $keyword) !== false || stripos((string)$o['id'], $keyword) !== false));
-    if ($status !== '') $orders = array_values(array_filter($orders, static fn($o) => $o['status'] === $status));
-    $page = 1; $totalPages = 1;
-    $title = 'Quản lý đơn hàng';
-    $view = 'admin/orders';
+    $status  = trim($_GET['filter_status'] ?? '');
+    $rawOrders = (new Order())->getAllAdmin();
+
+    $orders = array_map(static function ($o) {
+        return [
+            'id'            => $o['id'],
+            'order_code'    => $o['order_code'] ?? ('DH' . $o['id']),
+            'customer'      => $o['customer_name'] ?? 'N/A',
+            'date'          => $o['created_at'],
+            'status'        => $o['status'],
+            'total_raw'     => $o['total_amount'],
+            'total'         => number_format($o['total_amount'], 0, ',', '.') . 'đ',
+        ];
+    }, $rawOrders);
+
+    if ($keyword !== '') {
+        $orders = array_values(array_filter($orders, static fn($o) =>
+            stripos($o['customer'], $keyword) !== false ||
+            stripos((string) $o['id'], $keyword) !== false ||
+            stripos((string) ($o['order_code'] ?? ''), $keyword) !== false
+        ));
+    }
+
+    if ($status !== '') {
+        $orders = array_values(array_filter($orders, static fn($o) => $o['status'] === $status));
+    }
+
+    $page        = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage     = 10;
+    $totalOrders = count($orders);
+    $totalPages  = max(1, (int) ceil($totalOrders / $perPage));
+    $orders      = array_slice($orders, ($page - 1) * $perPage, $perPage);
+
+    $title  = 'Quản lý đơn hàng';
+    $view   = 'admin/orders';
+    $layout = 'admin';
+
+    require PATH_VIEW_MAIN;
+}
+
+public function orderDetail()
+{
+    $id = (int) ($_GET['id'] ?? 0);
+    $order = (new Order())->findForAdmin($id);
+
+    if (!$order) {
+        $_SESSION['error_message'] = 'Đơn hàng không tồn tại.';
+        header('Location: ' . BASE_URL . '?action=admin-orders');
+        exit;
+    }
+
+    $title  = 'Chi tiết đơn hàng: ' . ($order['order_code'] ?? ('#' . $order['id']));
+    $view   = 'admin/order_detail';
     $layout = 'admin';
 
     require PATH_VIEW_MAIN;
@@ -744,9 +797,24 @@ public function orders()
 
 public function updateOrderStatus()
 {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_validate($_POST['csrf_token'] ?? null)) { header('Location: ' . BASE_URL . '?action=admin-orders'); exit; }
-    (new Order())->updateStatus((int)($_POST['order_id'] ?? 0), (string)($_POST['status'] ?? 'pending'));
-    header('Location: ' . BASE_URL . '?action=admin-orders'); exit;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_validate($_POST['csrf_token'] ?? null)) {
+        header('Location: ' . BASE_URL . '?action=admin-orders');
+        exit;
+    }
+
+    $orderId = (int) ($_POST['order_id'] ?? 0);
+    $status  = (string) ($_POST['status'] ?? 'pending');
+
+    try {
+        (new Order())->updateStatus($orderId, $status);
+        $_SESSION['success_message'] = 'Đã cập nhật trạng thái đơn hàng #' . $orderId;
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Lỗi cập nhật: ' . $e->getMessage();
+    }
+
+    $returnUrl = $_POST['return_url'] ?? (BASE_URL . '?action=admin-orders');
+    header('Location: ' . $returnUrl);
+    exit;
 }
 
 /*
