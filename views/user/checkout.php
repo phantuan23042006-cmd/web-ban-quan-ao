@@ -1,6 +1,6 @@
 <?php
 /**
- * Trang checkout — checkout.php
+ * Trang checkout - checkout.php
  * Biến nhận từ controller: $cartItems, $totalAmount, $user
  */
 
@@ -35,7 +35,7 @@ unset($_SESSION['error_message']);
             <!-- Form thông tin nhận hàng -->
             <section class="profile-panel">
 
-                <h2>📋 Thông tin nhận hàng</h2>
+                <h2>📦 Thông tin nhận hàng</h2>
 
                 <form
                     method="post"
@@ -95,9 +95,35 @@ unset($_SESSION['error_message']);
                         ></textarea>
                     </div>
 
-                    <div style="padding:14px 18px;background:#f8fafc;border-radius:12px;margin-bottom:20px">
-                        <span style="color:#64748b;font-size:.9rem;font-weight:600">💳 Phương thức thanh toán:</span>
-                        <strong style="margin-left:8px">COD — Thanh toán khi nhận hàng</strong>
+                    <div class="form-group" style="margin-bottom:24px">
+                        <label style="display:block;font-weight:700;font-size:.95rem;color:#0f172a;margin-bottom:12px">
+                            💳 Chọn phương thức thanh toán <span style="color:red">*</span>
+                        </label>
+
+                        <div class="payment-methods-grid" style="display:grid;gap:12px">
+
+                            <!-- COD -->
+                            <label class="payment-option-card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:14px;cursor:pointer;transition:all 0.2s ease;background:#fff">
+                                <input type="radio" name="payment_method" value="cod" checked style="width:18px;height:18px;accent-color:#6366f1">
+                                <div style="flex:1">
+                                    <div style="font-weight:700;color:#0f172a;font-size:14px">💵 Thanh toán khi nhận hàng (COD)</div>
+                                    <div style="font-size:12px;color:#64748b;margin-top:2px">Trả tiền mặt trực tiếp khi nhận hàng từ nhân viên giao hàng</div>
+                                </div>
+                            </label>
+
+                            <!-- VietQR Techcombank -->
+                            <label class="payment-option-card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:14px;cursor:pointer;transition:all 0.2s ease;background:#fff">
+                                <input type="radio" name="payment_method" value="qr_techcombank" style="width:18px;height:18px;accent-color:#6366f1">
+                                <div style="flex:1">
+                                    <div style="font-weight:700;color:#0f172a;font-size:14px;display:flex;align-items:center;gap:8px">
+                                        <span style="background:#e11d48;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">VietQR</span>
+                                        Chuyển khoản QR Code (Techcombank)
+                                    </div>
+                                    <div style="font-size:12px;color:#64748b;margin-top:2px">STK: <strong>66333388889999</strong> (Ngân hàng Techcombank TCB)</div>
+                                </div>
+                            </label>
+
+                        </div>
                     </div>
 
                     <button
@@ -105,7 +131,7 @@ unset($_SESSION['error_message']);
                         class="button primary"
                         style="width:100%;justify-content:center;font-size:1rem;padding:14px"
                     >
-                        🚀 Đặt hàng ngay (<?= number_format($totalAmount, 0, ',', '.') ?>đ)
+                        🛍️ Đặt hàng ngay (<?= number_format($totalAmount, 0, ',', '.') ?>đ)
                     </button>
 
                 </form>
@@ -120,7 +146,7 @@ unset($_SESSION['error_message']);
                 <?php foreach ($cartItems as $item): ?>
                     <div class="checkout-summary-row">
                         <div>
-                            <div style="font-weight:600;font-size:.9rem"><?= e($item['product_name']) ?></div>
+                            <div style="font-weight:600;font-size:.9rem"><?= e($item['name'] ?? $item['product_name']) ?></div>
                             <div style="color:#64748b;font-size:.82rem;margin-top:2px">
                                 Size: <?= e($item['size']) ?> &times; <?= (int) $item['quantity'] ?>
                             </div>

@@ -7,9 +7,16 @@
 $product = $product ?? null;
 $statusLabels = [
     'pending'   => ['label' => 'Chờ xác nhận', 'bg' => '#fef3c7', 'color' => '#92400e'],
-    'confirmed' => ['label' => 'Đã xác nhận',  'bg' => '#dbeafe', 'color' => '#1e40af'],
-    'completed' => ['label' => 'Hoàn thành',   'class' => 'status-completed', 'bg' => '#dcfce7', 'color' => '#166534'],
+    'confirmed' => ['label' => 'Xác nhận',     'bg' => '#dbeafe', 'color' => '#1e40af'],
+    'completed' => ['label' => 'Đã giao',      'bg' => '#dcfce7', 'color' => '#166534'],
     'cancelled' => ['label' => 'Đã hủy',       'bg' => '#fee2e2', 'color' => '#991b1b'],
+];
+
+$allowedNextStatuses = [
+    'pending'   => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Xác nhận', 'cancelled' => 'Đã hủy'],
+    'confirmed' => ['confirmed' => 'Xác nhận', 'completed' => 'Đã giao', 'cancelled' => 'Đã hủy'],
+    'completed' => [],
+    'cancelled' => [],
 ];
 
 $stKey = $order['status'] ?? 'pending';
@@ -211,25 +218,33 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             <!-- Cập nhật trạng thái -->
             <div class="admin-card">
                 <h4 style="margin:0 0 16px;font-size:16px;color:#0f172a">🔄 Cập nhật trạng thái</h4>
-                <form method="post" action="<?= BASE_URL ?>?action=admin-order-status">
-                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
-                    <input type="hidden" name="return_url" value="<?= e(BASE_URL . '?action=admin-order-detail&id=' . $order['id']) ?>">
+                
+                <?php $nextOpts = $allowedNextStatuses[$stKey] ?? []; ?>
+                <?php if (!empty($nextOpts) && in_array($stKey, ['pending', 'confirmed'], true)): ?>
+                    <form method="post" action="<?= BASE_URL ?>?action=admin-order-status">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                        <input type="hidden" name="return_url" value="<?= e(BASE_URL . '?action=admin-order-detail&id=' . $order['id']) ?>">
 
-                    <div style="margin-bottom:16px">
-                        <select name="status" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #cbd5e1;font-size:14px;font-weight:600">
-                            <?php foreach ($statusLabels as $sKey => $sVal): ?>
-                                <option value="<?= e($sKey) ?>" <?= $stKey === $sKey ? 'selected' : '' ?>>
-                                    <?= e($sVal['label']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div style="margin-bottom:16px">
+                            <select name="status" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #cbd5e1;font-size:14px;font-weight:600">
+                                <?php foreach ($nextOpts as $sKey => $sLabel): ?>
+                                    <option value="<?= e($sKey) ?>" <?= $stKey === $sKey ? 'selected' : '' ?>>
+                                        <?= e($sLabel) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <button type="submit" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,0.25)">
+                            💾 Lưu thay đổi trạng thái
+                        </button>
+                    </form>
+                <?php else: ?>
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;color:#64748b;font-size:13px;font-weight:600;text-align:center">
+                        🔒 Đơn hàng đã ở trạng thái <strong>"<?= e($stInfo['label']) ?>"</strong>. Không thể thay đổi trạng thái nữa.
                     </div>
-
-                    <button type="submit" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,0.25)">
-                        💾 Lưu thay đổi trạng thái
-                    </button>
-                </form>
+                <?php endif; ?>
             </div>
 
             <!-- Người nhận -->
@@ -250,8 +265,25 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <dd><?= e($order['note']) ?></dd>
                     <?php endif; ?>
 
-                    <dt>Thanh toán</dt>
-                    <dd style="text-transform:uppercase"><?= e($order['payment_method']) ?></dd>
+                    <?php
+                        $payMethodMap = [
+                            'cod'            => '💵 COD — Thanh toán khi nhận hàng',
+                            'qr_techcombank' => '🔴 Chuyển khoản QR Code (Techcombank 66333388889999)',
+                        ];
+                        $pmText = $payMethodMap[$order['payment_method'] ?? 'cod'] ?? strtoupper($order['payment_method']);
+                        $isPaid = (($order['payment_status'] ?? 'unpaid') === 'paid');
+                    ?>
+                    <dt>Phương thức TT</dt>
+                    <dd style="font-weight:700"><?= e($pmText) ?></dd>
+
+                    <dt>Trạng thái TT</dt>
+                    <dd>
+                        <?php if ($isPaid): ?>
+                            <span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800">✓ Đã thanh toán</span>
+                        <?php else: ?>
+                            <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800">⏳ Chưa thanh toán</span>
+                        <?php endif; ?>
+                    </dd>
 
                     <dt>Tài khoản đặt</dt>
                     <dd><?= e($order['customer_name'] ?? 'Khách hàng') ?> (<?= e($order['customer_email'] ?? '') ?>)</dd>

@@ -234,9 +234,22 @@ switch ($action) {
         (new HomeController())->placeOrder();
         break;
 
-    case 'order-detail':
+    case 'confirm-payment':
+        routeRequireLogin();
+        (new HomeController())->confirmPayment();
+        break;
+
+        case 'order-detail':
         routeRequireLogin();
         (new HomeController())->orderDetail();
+        break;
+
+    case 'order-cancel':
+        routeRequireLogin();
+        if ($currentRole === 'admin') {
+            routeRedirect('admin-dashboard');
+        }
+        (new HomeController())->cancelOrder();
         break;
 
 

@@ -7,7 +7,7 @@
 $statusLabels = [
     'pending'   => ['label' => 'Chờ xác nhận', 'class' => 'status-pending'],
     'confirmed' => ['label' => 'Đã xác nhận',  'class' => 'status-confirmed'],
-    'completed' => ['label' => 'Hoàn thành',   'class' => 'status-completed'],
+    'completed' => ['label' => 'Đã giao',      'class' => 'status-completed'],
     'cancelled' => ['label' => 'Đã hủy',       'class' => 'status-cancelled'],
 ];
 
@@ -84,9 +84,21 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="<?= BASE_URL ?>?action=order-detail&id=<?= (int) $o['id'] ?>">
-                                        Xem →
-                                    </a>
+                                    <div style="display:flex;align-items:center;gap:8px">
+                                        <a class="button secondary compact" href="<?= BASE_URL ?>?action=order-detail&id=<?= (int) $o['id'] ?>" style="padding:5px 12px;font-size:12px;text-decoration:none">
+                                            Xem →
+                                        </a>
+                                        <?php if ($o['status'] !== 'completed' && $o['status'] !== 'cancelled'): ?>
+                                            <form method="post" action="<?= BASE_URL ?>?action=order-cancel" style="display:inline-block;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
+                                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                                <input type="hidden" name="order_id" value="<?= (int) $o['id'] ?>">
+                                                <input type="hidden" name="return_url" value="<?= e(BASE_URL . '?action=orders') ?>">
+                                                <button type="submit" class="button danger compact" style="padding:5px 12px;font-size:12px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-weight:700;cursor:pointer">
+                                                    Hủy đơn
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

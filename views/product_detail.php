@@ -383,7 +383,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             <span style="font-size:14px; font-weight:700; color:#0f172a;">Số lượng:</span>
                             <div class="quantity-input-group">
                                 <button type="button" class="qty-btn" onclick="adjustQty(-1)">-</button>
-                                <input type="number" id="detail_quantity" name="quantity" value="1" min="1" class="qty-input" readonly>
+                                <input type="number" id="detail_quantity" name="quantity" value="1" min="1" class="qty-input" oninput="validateDirectQty(this)" onblur="checkMinQty(this)">
                                 <button type="button" class="qty-btn" onclick="adjustQty(1)">+</button>
                             </div>
                             <button type="submit" class="btn btn-primary" style="flex:1;">🛒 Thêm vào giỏ hàng</button>
@@ -480,6 +480,22 @@ function adjustQty(amount) {
         current = selectedMaxStock;
     }
     qtyInput.value = current;
+}
+
+function validateDirectQty(input) {
+    let val = parseInt(input.value);
+    if (isNaN(val)) return;
+    if (val > selectedMaxStock) {
+        alert('Kho chỉ còn tối đa ' + selectedMaxStock + ' sản phẩm cho size này.');
+        input.value = selectedMaxStock;
+    }
+}
+
+function checkMinQty(input) {
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < 1) {
+        input.value = 1;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

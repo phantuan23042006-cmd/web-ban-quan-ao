@@ -7,7 +7,7 @@
 $statusLabels = [
     'pending'   => ['label' => 'Chờ xác nhận', 'class' => 'status-pending'],
     'confirmed' => ['label' => 'Đã xác nhận',  'class' => 'status-confirmed'],
-    'completed' => ['label' => 'Hoàn thành',   'class' => 'status-completed'],
+    'completed' => ['label' => 'Đã giao',      'class' => 'status-completed'],
     'cancelled' => ['label' => 'Đã hủy',       'class' => 'status-cancelled'],
 ];
 $st = $statusLabels[$order['status']] ?? ['label' => e($order['status']), 'class' => ''];
@@ -49,9 +49,21 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
                 <h1 style="margin:0;font-size:1.4rem">Chi tiết đơn hàng</h1>
-                <span class="order-status <?= e($st['class']) ?>">
-                    <?= e($st['label']) ?>
-                </span>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <span class="order-status <?= e($st['class']) ?>">
+                        <?= e($st['label']) ?>
+                    </span>
+                    <?php if ($order['status'] !== 'completed' && $order['status'] !== 'cancelled'): ?>
+                        <form method="post" action="<?= BASE_URL ?>?action=order-cancel" style="display:inline-block;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
+                            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                            <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                            <input type="hidden" name="return_url" value="<?= e(BASE_URL . '?action=order-detail&id=' . $order['id']) ?>">
+                            <button type="submit" style="padding:6px 14px;border-radius:10px;border:none;background:#ef4444;color:#fff;font-weight:700;font-size:.85rem;cursor:pointer">
+                                🚫 Hủy đơn
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div style="overflow-x:auto">
@@ -193,10 +205,33 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             <!-- Thanh toán -->
             <section class="profile-panel">
                 <h2>Thanh toán</h2>
-                <dl>
+                <?php
+                    $payMethodMap = [
+                        'cod'            => ['label' => 'Thanh toán khi nhận hàng (COD)', 'icon' => '💵'],
+                        'qr_techcombank' => ['label' => 'Chuyển khoản QR Code (Techcombank)', 'icon' => '🔴'],
+                    ];
+                    $pmKey = $order['payment_method'] ?? 'cod';
+                    $pmInfo = $payMethodMap[$pmKey] ?? ['label' => strtoupper($pmKey), 'icon' => '💳'];
+                    $isPaid = (($order['payment_status'] ?? 'unpaid') === 'paid');
+                ?>
+
+                <dl style="margin-bottom:16px">
                     <dt>Phương thức</dt>
-                    <dd style="text-transform:uppercase;font-weight:800">
-                        <?= e($order['payment_method']) ?>
+                    <dd style="font-weight:700;color:#0f172a">
+                        <?= $pmInfo['icon'] ?> <?= e($pmInfo['label']) ?>
+                    </dd>
+
+                    <dt>Trạng thái thanh toán</dt>
+                    <dd>
+                        <?php if ($isPaid): ?>
+                            <span style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800">
+                                ✓ ĐÃ THANH TOÁN
+                            </span>
+                        <?php else: ?>
+                            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800">
+                                ⏳ CHƯA THANH TOÁN
+                            </span>
+                        <?php endif; ?>
                     </dd>
 
                     <dt>Ngày đặt</dt>
@@ -204,6 +239,38 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <?= e(date('d/m/Y H:i', strtotime($order['created_at']))) ?>
                     </dd>
                 </dl>
+
+                <?php if (!$isPaid && $pmKey !== 'cod'): ?>
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin-top:16px;text-align:center">
+                        <h4 style="margin:0 0 12px;color:#0f172a;font-size:15px">
+                            📲 Vui lòng quét mã QR bên dưới để thanh toán
+                        </h4>
+
+                        <div style="display:inline-block;margin-bottom:14px">
+                            <img 
+                                src="https://img.vietqr.io/image/TCB-66333388889999-compact2.png?amount=<?= (int)$order['total_amount'] ?>&addInfo=<?= urlencode($order['order_code']) ?>&accountName=TAN%20AND%20TUAN%20CLOTHING" 
+                                alt="Mã thanh toán QR" 
+                                style="width:220px;height:220px;object-fit:contain;border-radius:14px;border:1px solid #cbd5e1;padding:8px;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,0.06)"
+                            >
+                        </div>
+
+                        <div style="background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:12px 16px;text-align:left;font-size:13px;display:grid;gap:6px;margin-bottom:16px">
+                            <div><strong>Ngân hàng:</strong> Techcombank (TCB)</div>
+                            <div><strong>Số tài khoản:</strong> <span style="font-family:monospace;font-size:15px;color:#e11d48;font-weight:800">66333388889999</span></div>
+                            <div><strong>Chủ tài khoản:</strong> TAN & TUAN CLOTHING</div>
+                            <div><strong>Số tiền:</strong> <strong style="color:#16a34a"><?= number_format($order['total_amount'], 0, ',', '.') ?>đ</strong></div>
+                            <div><strong>Nội dung chuyển khoản:</strong> <span style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-family:monospace;font-weight:800;color:#6366f1"><?= e($order['order_code']) ?></span></div>
+                        </div>
+
+                        <form method="post" action="<?= BASE_URL ?>?action=confirm-payment">
+                            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                            <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                            <button type="submit" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.3)">
+                                ✓ Tôi đã chuyển khoản / thanh toán xong
+                            </button>
+                        </form>
+                    </div>
+                <?php endif; ?>
             </section>
 
         </div>

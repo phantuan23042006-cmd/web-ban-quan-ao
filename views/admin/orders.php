@@ -7,9 +7,16 @@ $totalPages = max(1, $totalPages ?? 1);
 
 $statusLabels = [
     'pending'   => ['label' => 'Chờ xác nhận', 'class' => 'status-pending',   'bg' => '#fef3c7', 'color' => '#92400e'],
-    'confirmed' => ['label' => 'Đã xác nhận',  'class' => 'status-confirmed', 'bg' => '#dbeafe', 'color' => '#1e40af'],
-    'completed' => ['label' => 'Hoàn thành',   'class' => 'status-completed', 'bg' => '#dcfce7', 'color' => '#166534'],
+    'confirmed' => ['label' => 'Xác nhận',     'class' => 'status-confirmed', 'bg' => '#dbeafe', 'color' => '#1e40af'],
+    'completed' => ['label' => 'Đã giao',      'class' => 'status-completed', 'bg' => '#dcfce7', 'color' => '#166534'],
     'cancelled' => ['label' => 'Đã hủy',       'class' => 'status-cancelled', 'bg' => '#fee2e2', 'color' => '#991b1b'],
+];
+
+$allowedNextStatuses = [
+    'pending'   => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Xác nhận', 'cancelled' => 'Đã hủy'],
+    'confirmed' => ['confirmed' => 'Xác nhận', 'completed' => 'Đã giao', 'cancelled' => 'Đã hủy'],
+    'completed' => [],
+    'cancelled' => [],
 ];
 
 $successMessage = $_SESSION['success_message'] ?? null;
@@ -299,18 +306,23 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                     <?= e($stInfo['label']) ?>
                                 </span>
 
-                                <form class="status-update-form" method="post" action="<?= BASE_URL ?>?action=admin-order-status">
-                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                                    <input type="hidden" name="order_id" value="<?= e($order['id']) ?>">
-                                    <select name="status">
-                                        <?php foreach ($statusLabels as $sKey => $sVal): ?>
-                                            <option value="<?= e($sKey) ?>" <?= $stKey === $sKey ? 'selected' : '' ?>>
-                                                <?= e($sVal['label']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <button type="submit">Lưu</button>
-                                </form>
+                                <?php $nextOpts = $allowedNextStatuses[$stKey] ?? []; ?>
+                                <?php if (!empty($nextOpts) && in_array($stKey, ['pending', 'confirmed'], true)): ?>
+                                    <form class="status-update-form" method="post" action="<?= BASE_URL ?>?action=admin-order-status">
+                                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="order_id" value="<?= e($order['id']) ?>">
+                                        <select name="status">
+                                            <?php foreach ($nextOpts as $sKey => $sLabel): ?>
+                                                <option value="<?= e($sKey) ?>" <?= $stKey === $sKey ? 'selected' : '' ?>>
+                                                    <?= e($sLabel) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button type="submit">Lưu</button>
+                                    </form>
+                                <?php else: ?>
+                                    <small style="display:block;margin-top:4px;color:#94a3b8;font-size:11px;font-weight:600">(Đã khóa)</small>
+                                <?php endif; ?>
                             </td>
                             <td style="font-weight:800;color:#db2777">
                                 <?= e($order['total']) ?>

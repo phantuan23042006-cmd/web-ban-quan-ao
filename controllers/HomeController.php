@@ -174,10 +174,11 @@ class HomeController
         }
 
         $recipient = [
-            'name'    => trim($_POST['recipient_name'] ?? ''),
-            'phone'   => trim($_POST['recipient_phone'] ?? ''),
-            'address' => trim($_POST['recipient_address'] ?? ''),
-            'note'    => trim($_POST['note'] ?? '')
+            'name'           => trim($_POST['recipient_name'] ?? ''),
+            'phone'          => trim($_POST['recipient_phone'] ?? ''),
+            'address'        => trim($_POST['recipient_address'] ?? ''),
+            'note'           => trim($_POST['note'] ?? ''),
+            'payment_method' => trim($_POST['payment_method'] ?? 'cod')
         ];
 
         if (!$recipient['name'] || !$recipient['phone'] || !$recipient['address']) {
@@ -202,7 +203,11 @@ class HomeController
             $order = $this->orderModel->createFromCart($userId, $recipient, $items);
             $cart->clear();
 
-            $_SESSION['success_message'] = 'Đặt hàng thành công!';
+            if (($recipient['payment_method'] ?? 'cod') !== 'cod') {
+                $_SESSION['success_message'] = 'Đặt hàng thành công! Vui lòng tiến hành thanh toán bên dưới.';
+            } else {
+                $_SESSION['success_message'] = 'Đặt hàng thành công!';
+            }
             header('Location: ' . BASE_URL . '?action=order-detail&id=' . $order['id']);
             exit;
 
@@ -211,6 +216,30 @@ class HomeController
             header('Location: ' . BASE_URL . '?action=checkout');
             exit;
         }
+    }
+
+    public function confirmPayment(): void
+    {
+        $this->requireLogin();
+        $this->rejectAdmin();
+
+        $userId  = (int) ($_SESSION['user']['id'] ?? 0);
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+
+        if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+            $_SESSION['error_message'] = 'Yêu cầu không hợp lệ (CSRF).';
+            header('Location: ' . BASE_URL . '?action=orders');
+            exit;
+        }
+
+        $order = $this->orderModel->findForUser($orderId, $userId);
+        if ($order) {
+            $this->orderModel->updatePaymentStatus($orderId, 'paid');
+            $_SESSION['success_message'] = 'Xác nhận thanh toán thành công! Hệ thống đang chờ Admin duyệt đơn.';
+        }
+
+        header('Location: ' . BASE_URL . '?action=order-detail&id=' . $orderId);
+        exit;
     }
     public function orders(): void { $this->requireLogin();$this->rejectAdmin();$orders=$this->orderModel->getByUser((int)$_SESSION['user']['id']);$title='Đơn hàng của tôi';$view='user/orders';$layout='user';require PATH_VIEW_MAIN; }
     public function orderDetail(): void
@@ -404,5 +433,38 @@ class HomeController
         header('Location: ' . BASE_URL . '?action=change-password');
         exit;
     }
-}
 
+    public function cancelOrder(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?action=orders');
+            exit;
+        }
+
+        if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+            $_SESSION['error_message'] = 'Yêu cầu không hợp lệ (CSRF token).';
+            header('Location: ' . BASE_URL . '?action=orders');
+            exit;
+        }
+
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+        $userId  = (int) ($_SESSION['user']['id'] ?? 0);
+
+        if ($orderId <= 0 || $userId <= 0) {
+            $_SESSION['error_message'] = 'Đơn hàng không hợp lệ.';
+            header('Location: ' . BASE_URL . '?action=orders');
+            exit;
+        }
+
+        try {
+            $this->orderModel->cancelOrderForUser($orderId, $userId);
+            $_SESSION['success_message'] = 'Hủy đơn hàng thành công!';
+        } catch (Throwable $e) {
+            $_SESSION['error_message'] = $e->getMessage();
+        }
+
+        $returnUrl = $_POST['return_url'] ?? (BASE_URL . '?action=order-detail&id=' . $orderId);
+        header('Location: ' . $returnUrl);
+        exit;
+    }
+}

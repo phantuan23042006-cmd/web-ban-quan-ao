@@ -357,6 +357,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         <input type="hidden" name="variants[<?= $idx ?>][so_luong]" value="<?= e($v['so_luong']) ?>">
                                     </td>
                                     <td style="text-align: right;">
+                                        <button type="button" class="btn btn-warning btn-sm" style="background:#f59e0b;color:#fff;border:none;margin-right:4px;" onclick="editVariantRow(this)">Sửa</button>
                                         <button type="button" class="btn btn-danger btn-sm" onclick="removeVariantRow(this)">Xóa</button>
                                     </td>
                                 </tr>
@@ -383,7 +384,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     </form>
 </div>
 
-<!-- Modal Thêm Size -->
+<!-- Modal Thêm / Sửa Size -->
 <div class="modal-overlay" id="variantModal">
     <div class="modal-card">
         <h3 style="margin-top:0; color:#0f172a;" id="modalTitle">+ Thêm size biến thể mới</h3>
@@ -410,15 +411,19 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
         <div style="display:flex; gap:12px; justify-content:flex-end;">
             <button type="button" class="btn btn-secondary" onclick="closeAddVariantModal()">Hủy</button>
-            <button type="button" class="btn btn-primary" onclick="submitAddVariantModal()">Thêm vào danh sách</button>
+            <button type="button" class="btn btn-primary" id="modalSubmitBtn" onclick="submitAddVariantModal()">Thêm vào danh sách</button>
         </div>
     </div>
 </div>
 
 <script>
 let variantCounter = <?= count($variants) ?>;
+let editingRow = null;
 
 function openAddVariantModal() {
+    editingRow = null;
+    document.getElementById('modalTitle').innerText = '+ Thêm size biến thể mới';
+    document.getElementById('modalSubmitBtn').innerText = 'Thêm vào danh sách';
     document.getElementById('modal_size').value = '';
     document.getElementById('modal_gia_nhap').value = '';
     document.getElementById('modal_gia_ban').value = '';
@@ -426,8 +431,25 @@ function openAddVariantModal() {
     document.getElementById('variantModal').style.display = 'flex';
 }
 
+function editVariantRow(btn) {
+    editingRow = btn.closest('tr');
+    const sizeInput    = editingRow.querySelector('input[name$="[size]"]').value;
+    const giaNhapInput = editingRow.querySelector('input[name$="[gia_nhap]"]').value;
+    const giaBanInput  = editingRow.querySelector('input[name$="[gia_ban]"]').value;
+    const soLuongInput = editingRow.querySelector('input[name$="[so_luong]"]').value;
+
+    document.getElementById('modalTitle').innerText = '✏️ Chỉnh sửa biến thể size "' + sizeInput + '"';
+    document.getElementById('modalSubmitBtn').innerText = 'Cập nhật biến thể';
+    document.getElementById('modal_size').value = sizeInput;
+    document.getElementById('modal_gia_nhap').value = giaNhapInput;
+    document.getElementById('modal_gia_ban').value = giaBanInput;
+    document.getElementById('modal_so_luong').value = soLuongInput;
+    document.getElementById('variantModal').style.display = 'flex';
+}
+
 function closeAddVariantModal() {
     document.getElementById('variantModal').style.display = 'none';
+    editingRow = null;
 }
 
 function submitAddVariantModal() {
@@ -456,50 +478,86 @@ function submitAddVariantModal() {
         return;
     }
 
-    // Kiểm tra trùng size trong bảng
-    const existingSizes = Array.from(document.querySelectorAll('#variantTbody input[name$="[size]"]')).map(i => i.value.toUpperCase());
-    if (existingSizes.includes(sizeInput)) {
+    // Kiểm tra trùng size trong bảng ngoại trừ dòng đang sửa
+    const existingInputs = Array.from(document.querySelectorAll('#variantTbody input[name$="[size]"]'));
+    const isDuplicate = existingInputs.some(input => {
+        if (editingRow && input.closest('tr') === editingRow) return false;
+        return input.value.toUpperCase() === sizeInput;
+    });
+
+    if (isDuplicate) {
         alert('Size "' + sizeInput + '" đã tồn tại trong danh sách!');
         return;
     }
 
-    // Xóa dòng thông báo trống nếu có
-    const emptyRow = document.getElementById('empty-variant-row');
-    if (emptyRow) {
-        emptyRow.remove();
-    }
-
-    const tbody = document.getElementById('variantTbody');
-    const idx = variantCounter++;
-
     const formattedGiaNhap = new Intl.NumberFormat('vi-VN').format(giaNhapInput) + ' đ';
     const formattedGiaBan = new Intl.NumberFormat('vi-VN').format(giaBanInput) + ' đ';
 
-    const tr = document.createElement('tr');
-    tr.id = 'variant-row-' + idx;
-    tr.innerHTML = `
-        <td>
-            <strong>${escapeHtml(sizeInput)}</strong>
-            <input type="hidden" name="variants[${idx}][size]" value="${escapeHtml(sizeInput)}">
-        </td>
-        <td>
-            ${formattedGiaNhap}
-            <input type="hidden" name="variants[${idx}][gia_nhap]" value="${giaNhapInput}">
-        </td>
-        <td>
-            ${formattedGiaBan}
-            <input type="hidden" name="variants[${idx}][gia_ban]" value="${giaBanInput}">
-        </td>
-        <td>
-            ${soLuongInput}
-            <input type="hidden" name="variants[${idx}][so_luong]" value="${soLuongInput}">
-        </td>
-        <td style="text-align: right;">
-            <button type="button" class="btn btn-danger btn-sm" onclick="removeVariantRow(this)">Xóa</button>
-        </td>
-    `;
+    if (editingRow) {
+        // Cập nhật dòng đang chỉnh sửa
+        const idxMatch = editingRow.id.match(/\d+/);
+        const idx = idxMatch ? idxMatch[0] : 0;
 
-    tbody.appendChild(tr);
+        editingRow.innerHTML = `
+            <td>
+                <strong>${escapeHtml(sizeInput)}</strong>
+                <input type="hidden" name="variants[${idx}][size]" value="${escapeHtml(sizeInput)}">
+            </td>
+            <td>
+                ${formattedGiaNhap}
+                <input type="hidden" name="variants[${idx}][gia_nhap]" value="${giaNhapInput}">
+            </td>
+            <td>
+                ${formattedGiaBan}
+                <input type="hidden" name="variants[${idx}][gia_ban]" value="${giaBanInput}">
+            </td>
+            <td>
+                ${soLuongInput}
+                <input type="hidden" name="variants[${idx}][so_luong]" value="${soLuongInput}">
+            </td>
+            <td style="text-align: right;">
+                <button type="button" class="btn btn-warning btn-sm" style="background:#f59e0b;color:#fff;border:none;margin-right:4px;" onclick="editVariantRow(this)">Sửa</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeVariantRow(this)">Xóa</button>
+            </td>
+        `;
+    } else {
+        // Thêm dòng mới
+        const emptyRow = document.getElementById('empty-variant-row');
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const tbody = document.getElementById('variantTbody');
+        const idx = variantCounter++;
+
+        const tr = document.createElement('tr');
+        tr.id = 'variant-row-' + idx;
+        tr.innerHTML = `
+            <td>
+                <strong>${escapeHtml(sizeInput)}</strong>
+                <input type="hidden" name="variants[${idx}][size]" value="${escapeHtml(sizeInput)}">
+            </td>
+            <td>
+                ${formattedGiaNhap}
+                <input type="hidden" name="variants[${idx}][gia_nhap]" value="${giaNhapInput}">
+            </td>
+            <td>
+                ${formattedGiaBan}
+                <input type="hidden" name="variants[${idx}][gia_ban]" value="${giaBanInput}">
+            </td>
+            <td>
+                ${soLuongInput}
+                <input type="hidden" name="variants[${idx}][so_luong]" value="${soLuongInput}">
+            </td>
+            <td style="text-align: right;">
+                <button type="button" class="btn btn-warning btn-sm" style="background:#f59e0b;color:#fff;border:none;margin-right:4px;" onclick="editVariantRow(this)">Sửa</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeVariantRow(this)">Xóa</button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    }
+
     closeAddVariantModal();
 }
 
