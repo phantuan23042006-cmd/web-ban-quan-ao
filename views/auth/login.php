@@ -449,10 +449,10 @@ if (!function_exists('loginError')) {
     <div class="login-container">
         <aside class="login-banner">
             <div class="login-banner-content">
-                <div class="login-brand">
-                    <span class="login-logo">F</span>
-                    <span>Fashion Store</span>
-                </div>
+                <a href="<?= BASE_URL ?>" class="login-brand" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:12px">
+                    <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN" style="height:44px;object-fit:contain;background:#fff;padding:3px 6px;border-radius:10px;vertical-align:middle">
+                    <span style="font-family:'Space Grotesk',sans-serif;font-weight:900;letter-spacing:1px;text-transform:uppercase">TAN & TUAN</span>
+                </a>
 
                 <h2>
                     Chào mừng bạn quay trở lại
@@ -598,8 +598,7 @@ if (!function_exists('loginError')) {
 
                     <a
                         class="login-forgot"
-                        href="javascript:void(0)"
-                        onclick="alert('Chức năng quên mật khẩu sẽ được phát triển sau.')"
+                        href="<?= BASE_URL ?>?action=forgot-password"
                     >
                         Quên mật khẩu?
                     </a>

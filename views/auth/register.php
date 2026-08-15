@@ -409,10 +409,10 @@ function authError($key, $errors)
     <div class="register-container">
         <aside class="register-banner">
             <div class="register-banner-content">
-                <div class="register-brand">
-                    <span class="register-logo">F</span>
-                    <span> Store</span>
-                </div>
+                <a href="<?= BASE_URL ?>" class="register-brand" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:12px">
+                    <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN" style="height:44px;object-fit:contain;background:#fff;padding:3px 6px;border-radius:10px;vertical-align:middle">
+                    <span style="font-family:'Space Grotesk',sans-serif;font-weight:900;letter-spacing:1px;text-transform:uppercase">TAN & TUAN</span>
+                </a>
 
                 <h2>
                     Khám phá phong cách dành riêng cho bạn

@@ -12,7 +12,7 @@ unset($_SESSION['error_message']);
 
     <div style="margin-bottom:28px">
         <span class="eyebrow">THANH TOÁN</span>
-        <h1 style="margin:6px 0 0;color:#0f172a">Xác nhận đơn hàng</h1>
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:900;text-transform:uppercase;margin:6px 0 0;color:#0f172a">XÁC NHẬN ĐƠN HÀNG</h1>
     </div>
 
     <?php if ($errorMessage): ?>
@@ -104,7 +104,7 @@ unset($_SESSION['error_message']);
 
                             <!-- COD -->
                             <label class="payment-option-card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:14px;cursor:pointer;transition:all 0.2s ease;background:#fff">
-                                <input type="radio" name="payment_method" value="cod" checked style="width:18px;height:18px;accent-color:#6366f1">
+                                <input type="radio" name="payment_method" value="cod" checked style="width:18px;height:18px;accent-color:#000000">
                                 <div style="flex:1">
                                     <div style="font-weight:700;color:#0f172a;font-size:14px">💵 Thanh toán khi nhận hàng (COD)</div>
                                     <div style="font-size:12px;color:#64748b;margin-top:2px">Trả tiền mặt trực tiếp khi nhận hàng từ nhân viên giao hàng</div>
@@ -113,7 +113,7 @@ unset($_SESSION['error_message']);
 
                             <!-- VietQR Techcombank -->
                             <label class="payment-option-card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:14px;cursor:pointer;transition:all 0.2s ease;background:#fff">
-                                <input type="radio" name="payment_method" value="qr_techcombank" style="width:18px;height:18px;accent-color:#6366f1">
+                                <input type="radio" name="payment_method" value="qr_techcombank" style="width:18px;height:18px;accent-color:#000000">
                                 <div style="flex:1">
                                     <div style="font-weight:700;color:#0f172a;font-size:14px;display:flex;align-items:center;gap:8px">
                                         <span style="background:#e11d48;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800">VietQR</span>
@@ -128,8 +128,7 @@ unset($_SESSION['error_message']);
 
                     <button
                         type="submit"
-                        class="button primary"
-                        style="width:100%;justify-content:center;font-size:1rem;padding:14px"
+                        class="button primary" style="width:100%;justify-content:center;font-size:1rem;padding:14px;background:#000;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:1px;border-radius:12px;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.3)"
                     >
                         🛍️ Đặt hàng ngay (<?= number_format($totalAmount, 0, ',', '.') ?>đ)
                     </button>
@@ -159,7 +158,7 @@ unset($_SESSION['error_message']);
 
                 <div class="checkout-total">
                     <span>Tổng cộng</span>
-                    <span style="color:#db2777"><?= number_format($totalAmount, 0, ',', '.') ?>đ</span>
+                    <span style="color:#e11d48"><?= number_format($totalAmount, 0, ',', '.') ?>đ</span>
                 </div>
 
                 <div style="margin-top:14px;padding:12px;background:#fdf4ff;border-radius:10px;font-size:.82rem;color:#7c3aed;font-weight:600">

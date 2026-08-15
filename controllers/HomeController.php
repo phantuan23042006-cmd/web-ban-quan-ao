@@ -32,8 +32,47 @@ class HomeController
         }
     }
     private function rejectAdmin(): void { if (($_SESSION['user']['role'] ?? '') === 'admin') { header('Location: ' . BASE_URL . '?action=admin-dashboard'); exit; } }
-    public function index(): void { $this->requireLogin(); $this->rejectAdmin(); $title='Trang chủ'; $view='user/home'; $layout='user'; $categories=$this->categoryModel->getAll(); $featuredProducts=$this->productModel->getCatalog(['sort'=>'rating'],4); $newProducts=$this->productModel->getCatalog([],8); require PATH_VIEW_MAIN; }
-    public function products(): void { $this->requireLogin(); $this->rejectAdmin(); $filters=['keyword'=>trim($_GET['keyword']??''),'danh_muc_id'=>(int)($_GET['category']??$_GET['danh_muc_id']??0),'min_price'=>$_GET['min_price']??'','max_price'=>$_GET['max_price']??'','sort'=>$_GET['sort']??'']; $title='Sản phẩm'; $view='user/products'; $layout='user'; $products=$this->productModel->getCatalog($filters); $categories=$this->categoryModel->getAll(); require PATH_VIEW_MAIN; }
+    public function index(): void {
+        $this->requireLogin();
+        $this->rejectAdmin();
+        $title = 'Trang chủ';
+        $view  = 'user/home';
+        $layout = 'user';
+
+        $categories = $this->categoryModel->getAll();
+        
+        $featuredCatalog = $this->productModel->getCatalog(['sort' => 'rating'], 1, 4);
+        $featuredProducts = $featuredCatalog['items'] ?? [];
+
+        $newCatalog = $this->productModel->getCatalog([], 1, 8);
+        $newProducts = $newCatalog['items'] ?? [];
+
+        require PATH_VIEW_MAIN;
+    }
+    public function products(): void {
+        $this->requireLogin();
+        $this->rejectAdmin();
+        $filters = [
+            'keyword'     => trim($_GET['keyword'] ?? ''),
+            'danh_muc_id' => (int)($_GET['category'] ?? $_GET['danh_muc_id'] ?? 0),
+            'min_price'   => $_GET['min_price'] ?? '',
+            'max_price'   => $_GET['max_price'] ?? '',
+            'sort'        => $_GET['sort'] ?? ''
+        ];
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 12;
+
+        $title = 'Sản phẩm';
+        $view = 'user/products';
+        $layout = 'user';
+
+        $catalogData = $this->productModel->getCatalog($filters, $page, $perPage);
+        $products = $catalogData['items'];
+        $pagination = $catalogData;
+        $categories = $this->categoryModel->getAll();
+
+        require PATH_VIEW_MAIN;
+    }
     public function categories(): void { $this->requireLogin(); $this->rejectAdmin(); $title='Danh mục'; $view='user/categories'; $layout='user'; $categories=$this->categoryModel->getAll(); require PATH_VIEW_MAIN; }
     public function productDetail(): void
     {

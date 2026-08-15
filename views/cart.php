@@ -198,7 +198,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #7c3aed, #db2777);
+        background: #000000; font-family: "Space Grotesk", sans-serif; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
         color: #ffffff;
     }
 
@@ -245,7 +245,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <div class="cart-card">
         <div class="cart-header-title">
             <div>
-                <h1>Giỏ hàng của bạn</h1>
+                <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:900;text-transform:uppercase">GIỎ HÀNG CỦA BẠN</h1>
                 <p style="margin:4px 0 0; color:#64748b; font-size:14px;">
                     Tổng số lượng: <strong><?= e($totalQuantity) ?></strong> sản phẩm
                 </p>
@@ -309,7 +309,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                     </div>
                                 </td>
                                 <td>
-                                    <strong style="color:#db2777; font-size:16px;"><?= number_format($item['subtotal'], 0, ',', '.') ?>đ</strong>
+                                    <strong style="color:#e11d48; font-size:16px;"><?= number_format($item['subtotal'], 0, ',', '.') ?>đ</strong>
                                 </td>
                                 <td style="text-align: right;">
                                     <a href="<?= BASE_URL ?>?action=cart-remove&variant_id=<?= $item['variant_id'] ?>" 
@@ -338,7 +338,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                     </div>
                     <div class="summary-row total">
                         <span>Tổng tiền:</span>
-                        <span style="color:#db2777;"><?= number_format($totalAmount, 0, ',', '.') ?>đ</span>
+                        <span style="color:#e11d48;"><?= number_format($totalAmount, 0, ',', '.') ?>đ</span>
                     </div>
                     <button type="button" class="btn btn-primary" onclick="alert('Đã sẵn sàng cho bước Thanh toán!');">
                         Tiến hành thanh toán →

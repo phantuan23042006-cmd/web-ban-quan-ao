@@ -120,6 +120,22 @@ switch ($action) {
     | ĐĂNG NHẬP
     |--------------------------------------------------------------------------
     */
+        case 'forgot-password':
+        (new AuthController())->forgotPassword();
+        break;
+
+    case 'forgot-password-submit':
+        (new AuthController())->submitForgotPassword();
+        break;
+
+    case 'reset-password':
+        (new AuthController())->resetPassword();
+        break;
+
+    case 'reset-password-submit':
+        (new AuthController())->submitResetPassword();
+        break;
+
     case 'login':
         (new AuthController())->showLogin();
         break;

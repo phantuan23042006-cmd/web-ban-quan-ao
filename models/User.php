@@ -1033,4 +1033,60 @@ private function buildAdminUserWhere(
         $conditions
     );
 }
+
+    public function createPasswordResetToken(string $email): string
+    {
+        $user = $this->findByEmail($email);
+        if (!$user) {
+            throw new InvalidArgumentException('Email không tồn tại trong hệ thống.');
+        }
+
+        $del = $this->pdo->prepare('DELETE FROM password_resets WHERE email = :email');
+        $del->execute([':email' => $email]);
+
+        $token = bin2hex(random_bytes(32));
+        $now = date('Y-m-d H:i:s');
+
+        $ins = $this->pdo->prepare('INSERT INTO password_resets (email, token, created_at) VALUES (:email, :token, :created_at)');
+        $ins->execute([
+            ':email'      => $email,
+            ':token'      => $token,
+            ':created_at' => $now
+        ]);
+
+        return $token;
+    }
+
+    public function verifyPasswordResetToken(string $email, string $token): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT created_at FROM password_resets WHERE email = :email AND token = :token LIMIT 1');
+        $stmt->execute([':email' => $email, ':token' => $token]);
+        $createdAt = $stmt->fetchColumn();
+
+        if (!$createdAt) {
+            return false;
+        }
+
+        if ((time() - strtotime($createdAt)) > 900) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function resetPasswordWithToken(string $email, string $token, string $newPassword): bool
+    {
+        if (!$this->verifyPasswordResetToken($email, $token)) {
+            throw new InvalidArgumentException('Mã xác nhận không hợp lệ hoặc đã hết hạn (quá 15 phút).');
+        }
+
+        $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $stmt = $this->pdo->prepare('UPDATE users SET password = :password WHERE email = :email');
+        $stmt->execute([':password' => $hash, ':email' => $email]);
+
+        $del = $this->pdo->prepare('DELETE FROM password_resets WHERE email = :email');
+        $del->execute([':email' => $email]);
+
+        return true;
+    }
 }

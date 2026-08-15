@@ -505,4 +505,120 @@ class AuthController
 
         exit;
     }
+
+    public function forgotPassword()
+    {
+        if (isset($_SESSION['user'])) {
+            $this->redirect('products');
+        }
+
+        $csrfToken = $this->generateCsrfToken();
+        $title = 'Quên mật khẩu';
+        $view  = 'auth/forgot_password';
+        $layout = 'auth';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function submitForgotPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('forgot-password');
+        }
+
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (!$this->validateCsrfToken($csrfToken)) {
+            $_SESSION['error'] = 'Yêu cầu không hợp lệ (CSRF).';
+            $this->redirect('forgot-password');
+        }
+
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = 'Vui lòng nhập địa chỉ email hợp lệ.';
+            $this->redirect('forgot-password');
+        }
+
+        try {
+            $token = $this->userModel->createPasswordResetToken($email);
+            $resetLink = BASE_URL . '?action=reset-password&email=' . urlencode($email) . '&token=' . $token;
+
+            $subject = '=?UTF-8?B?' . base64_encode('Yêu cầu đặt lại mật khẩu - DuAn1') . '?=';
+            $message = "Xin chào,\n\nBạn đã yêu cầu đặt lại mật khẩu tại website DuAn1.\n";
+            $message .= "Vui lòng truy cập đường dẫn sau trong vòng 15 phút để tạo mật khẩu mới:\n";
+            $message .= $resetLink . "\n\n";
+            $message .= "Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua email.\nTrân trọng!";
+            $headers = "From: no-reply@duan1.local\r\nContent-Type: text/plain; charset=UTF-8\r\n";
+
+            @mail($email, $subject, $message, $headers);
+
+            $_SESSION['reset_link_debug'] = $resetLink;
+            $_SESSION['success'] = 'Đã gửi liên kết khôi phục mật khẩu đến email của bạn! Vui lòng kiểm tra hộp thư.';
+            $this->redirect('forgot-password');
+
+        } catch (Throwable $e) {
+            $_SESSION['error'] = $e->getMessage();
+            $this->redirect('forgot-password');
+        }
+    }
+
+    public function resetPassword()
+    {
+        if (isset($_SESSION['user'])) {
+            $this->redirect('products');
+        }
+
+        $email = strtolower(trim($_GET['email'] ?? ''));
+        $token = trim($_GET['token'] ?? '');
+
+        if (!$email || !$token || !$this->userModel->verifyPasswordResetToken($email, $token)) {
+            $_SESSION['error'] = 'Liên kết khôi phục mật khẩu không hợp lệ hoặc đã hết hạn.';
+            $this->redirect('login');
+        }
+
+        $csrfToken = $this->generateCsrfToken();
+        $title = 'Đặt lại mật khẩu';
+        $view  = 'auth/reset_password';
+        $layout = 'auth';
+
+        require PATH_VIEW_MAIN;
+    }
+
+    public function submitResetPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('login');
+        }
+
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (!$this->validateCsrfToken($csrfToken)) {
+            $_SESSION['error'] = 'Yêu cầu không hợp lệ (CSRF).';
+            $this->redirect('login');
+        }
+
+        $email       = strtolower(trim($_POST['email'] ?? ''));
+        $token       = trim($_POST['token'] ?? '');
+        $password    = $_POST['password'] ?? '';
+        $confirmPass = $_POST['confirm_password'] ?? '';
+
+        if (strlen($password) < 6) {
+            $_SESSION['error'] = 'Mật khẩu mới phải có ít nhất 6 ký tự.';
+            header('Location: ' . BASE_URL . '?action=reset-password&email=' . urlencode($email) . '&token=' . urlencode($token));
+            exit;
+        }
+
+        if ($password !== $confirmPass) {
+            $_SESSION['error'] = 'Mật khẩu nhập lại không khớp.';
+            header('Location: ' . BASE_URL . '?action=reset-password&email=' . urlencode($email) . '&token=' . urlencode($token));
+            exit;
+        }
+
+        try {
+            $this->userModel->resetPasswordWithToken($email, $token, $password);
+            $_SESSION['success'] = 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.';
+            $this->redirect('login');
+        } catch (Throwable $e) {
+            $_SESSION['error'] = $e->getMessage();
+            $this->redirect('login');
+        }
+    }
 }

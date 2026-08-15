@@ -1002,7 +1002,12 @@ if (function_exists('mb_substr')) {
             .profile-panel dl  { grid-template-columns: 1fr; gap: 4px; }
             .profile-tabs a    { padding: 8px 12px; font-size: .82rem; }
         }
-    </style>
+    
+@keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Space+Grotesk:wght@500;700;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -1250,172 +1255,85 @@ if (function_exists('mb_substr')) {
 
     <div class="user-layout">
 
-        <div class="user-topbar">
-            <div class="container user-topbar-inner">
-
-                <span>
-                    Miễn phí giao hàng cho đơn từ 500.000đ
-                </span>
-
-                <div class="user-topbar-links">
-                    <a href="javascript:void(0)">
-                        Chính sách đổi trả
-                    </a>
-
-                    <a href="javascript:void(0)">
-                        Hỗ trợ khách hàng
-                    </a>
+        <div class="user-topbar" style="background:#090d16;color:#fff;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 0;border-bottom:1px solid #1e293b">
+            <div class="container" style="display:flex;justify-content:space-between;align-items:center;overflow:hidden">
+                <div class="ticker-text" style="display:flex;gap:30px;white-space:nowrap;animation:marquee 25s linear infinite">
+                    <span>🔥 TAN & TUAN CLOTHING</span>
+                    <span>•</span>
+                    <span>BASED IN SAIGON</span>
+                    <span>•</span>
+                    <span>MIỄN PHÍ VẬN CHUYỂN ĐƠN HÀNG TỪ 500.000Đ</span>
+                    <span>•</span>
+                    <span>AUTHENTIC STREETWEAR BRAND</span>
+                    <span>•</span>
+                    <span>HOT STREETWEAR COLLECTION 2026</span>
                 </div>
-
             </div>
         </div>
 
-        <header class="user-header">
-            <div class="container user-header-inner">
+        <header class="user-header" style="background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100">
+            <div class="container user-header-inner" style="display:flex;align-items:center;justify-content:space-between;min-height:76px">
 
-                <a
-                    class="brand"
-                    href="<?= BASE_URL ?>"
-                >
-                    <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN CLOTHING" style="height: 48px; object-fit: contain; vertical-align: middle; border-radius: 6px;">
-                    <span class="brand-text" style="font-weight: 800; color: #0f172a; font-size: 20px; letter-spacing: -0.5px;">
+                <a class="brand" href="<?= BASE_URL ?>" style="display:flex;align-items:center;gap:10px;text-decoration:none">
+                    <div style="background:#000;color:#fff;padding:6px 12px;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:18px;letter-spacing:1.5px;border:1px solid #334155;text-transform:uppercase">
                         TAN & TUAN
-                    </span>
+                    </div>
+                    <div style="display:flex;flex-direction:column">
+                        <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;color:#0f172a;letter-spacing:1px;text-transform:uppercase">
+                            DOUBLEBAD <span style="color:#e11d48">STUDIO</span>
+                        </span>
+                        <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:0.5px;text-transform:uppercase">
+                            Official Streetwear Store
+                        </span>
+                    </div>
                 </a>
 
-                <nav
-                    class="user-nav"
-                    id="userNav"
-                >
-                    <a
-                        class="<?= menuActive(['/', 'home', 'user-dashboard'], $currentAction) ?>"
-                        href="<?= BASE_URL ?>"
-                    >
+                <nav class="user-nav" id="userNav" style="display:flex;gap:24px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;text-transform:uppercase">
+                    <a class="<?= menuActive(['/', 'home', 'user-dashboard'], $currentAction) ?>" href="<?= BASE_URL ?>" style="text-decoration:none;color:#0f172a">
                         Trang chủ
                     </a>
-
-                    <a
-                        class="<?= menuActive(['products', 'product-detail'], $currentAction) ?>"
-                        href="<?= BASE_URL ?>?action=products"
-                    >
+                    <a class="<?= menuActive(['products', 'product-detail'], $currentAction) ?>" href="<?= BASE_URL ?>?action=products" style="text-decoration:none;color:#0f172a">
                         Sản phẩm
                     </a>
-
-                    <a
-                        class="<?= menuActive(['categories'], $currentAction) ?>"
-                        href="<?= BASE_URL ?>?action=categories"
-                    >
+                    <a class="<?= menuActive(['categories'], $currentAction) ?>" href="<?= BASE_URL ?>?action=categories" style="text-decoration:none;color:#0f172a">
                         Danh mục
                     </a>
-
-                    <a
-                        class="<?= menuActive(['orders', 'order-detail'], $currentAction) ?>"
-                        href="<?= BASE_URL ?>?action=orders"
-                    >
+                    <a class="<?= menuActive(['orders', 'order-detail'], $currentAction) ?>" href="<?= BASE_URL ?>?action=orders" style="text-decoration:none;color:#0f172a">
                         Đơn hàng của tôi
                     </a>
                 </nav>
 
-                <div class="user-actions">
-
-                    <?php
-                        $cartCount = 0;
-                        if (!empty($_SESSION['cart'])) {
-                            foreach ($_SESSION['cart'] as $ci) {
-                                $cartCount += (int)($ci['quantity'] ?? 0);
-                            }
-                        }
-                    ?>
-                    <a
-                        class="icon-button cart-icon-wrap"
-                        href="<?= BASE_URL ?>?action=cart"
-                        title="Giỏ hàng"
-                        aria-label="Giỏ hàng"
-                        id="cartNavBtn"
-                    >
+                <div class="user-actions" style="display:flex;align-items:center;gap:16px">
+                    <a class="icon-button cart-icon-wrap" href="<?= BASE_URL ?>?action=cart" title="Giỏ hàng" style="position:relative;text-decoration:none;font-size:20px">
                         🛒
-                        <?php if ($cartCount > 0): ?>
-                            <span class="cart-badge" id="cartBadge">
-                                <?= $cartCount > 99 ? '99+' : $cartCount ?>
+                        <?php if (!empty($cartCount) && $cartCount > 0): ?>
+                            <span class="cart-badge" style="position:absolute;top:-6px;right:-10px;background:#e11d48;color:#fff;font-size:11px;font-weight:800;padding:2px 6px;border-radius:999px">
+                                <?= e($cartCount) ?>
                             </span>
                         <?php endif; ?>
                     </a>
 
-                    <div
-                        class="account"
-                        id="userAccount"
-                    >
-                        <button
-                            class="account-button"
-                            id="accountButton"
-                            type="button"
-                        >
-                            <span class="avatar">
+                    <div class="account-dropdown" id="userAccount">
+                        <button class="account-trigger" id="accountButton" type="button" style="display:flex;align-items:center;gap:8px;background:#f1f5f9;border:1px solid #cbd5e1;padding:6px 12px;border-radius:10px;cursor:pointer;font-weight:700">
+                            <span class="avatar-circle" style="background:#000;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">
                                 <?= e($userInitial) ?>
                             </span>
-
-                            <span class="account-name">
-                                <?= e($userName) ?>
-                            </span>
-
-                            <span class="account-arrow">
-                                ▼
-                            </span>
+                            <span class="account-name"><?= e($userName) ?></span>
+                            <span class="account-arrow">▼</span>
                         </button>
-
                         <div class="account-menu">
-
                             <div class="account-summary">
-                                <strong>
-                                    <?= e($userName) ?>
-                                </strong>
-
-                                <span>
-                                    <?= e($userEmail) ?>
-                                </span>
+                                <strong><?= e($userName) ?></strong>
+                                <span><?= e($userEmail) ?></span>
                             </div>
-
-                            <a href="<?= BASE_URL ?>?action=profile">
-                                <span>👤</span>
-                                Thông tin cá nhân
-                            </a>
-
-                            <a href="<?= BASE_URL ?>?action=change-password">
-                                <span>🔑</span>
-                                Đổi mật khẩu
-                            </a>
-
-                            <a href="<?= BASE_URL ?>?action=orders">
-                                <span>📦</span>
-                                Đơn hàng của tôi
-                            </a>
-
-                            <a
-                                class="logout-link"
-                                href="<?= BASE_URL ?>?action=logout"
-                                onclick="
-                                    return confirm(
-                                        'Bạn có chắc muốn đăng xuất?'
-                                    );
-                                "
-                            >
-                                <span>↪</span>
-                                Đăng xuất
-                            </a>
-
+                            <a href="<?= BASE_URL ?>?action=profile"><span>👤</span> Thông tin cá nhân</a>
+                            <a href="<?= BASE_URL ?>?action=change-password"><span>🔑</span> Đổi mật khẩu</a>
+                            <a href="<?= BASE_URL ?>?action=orders"><span>📦</span> Đơn hàng của tôi</a>
+                            <a class="logout-link" href="<?= BASE_URL ?>?action=logout" onclick="return confirm('Bạn có chắc muốn đăng xuất?');"><span>↪</span> Đăng xuất</a>
                         </div>
                     </div>
-
-                    <button
-                        class="icon-button mobile-menu-button"
-                        id="mobileMenuButton"
-                        type="button"
-                        aria-label="Mở menu"
-                    >
-                        ☰
-                    </button>
-
                 </div>
+
             </div>
         </header>
 
@@ -1439,89 +1357,62 @@ if (function_exists('mb_substr')) {
 
         </main>
 
-        <footer class="user-footer">
-
-            <div class="container user-footer-main">
+        <footer class="user-footer" style="background:#090d16;color:#f8fafc;padding:60px 0 20px;border-top:2px solid #000;margin-top:60px">
+            <div class="container user-footer-main" style="display:grid;grid-template-columns:1.8fr 1fr 1fr 1.2fr;gap:40px">
 
                 <div>
-                    <div class="footer-brand" style="display:flex;align-items:center;gap:12px">
-                        <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN CLOTHING" style="height: 52px; object-fit: contain; background: #fff; padding: 4px 8px; border-radius: 10px; vertical-align: middle;">
-                        <span style="font-weight: 800; font-size: 20px; color: #ffffff; letter-spacing: -0.5px;">
-                            TAN & TUAN
+                    <div class="footer-brand" style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                        <img src="<?= BASE_ASSETS_UPLOADS ?>logo.jpg" alt="TAN & TUAN" style="height:44px;object-fit:contain;background:#fff;padding:3px 6px;border-radius:8px">
+                        <span style="font-weight:900;font-size:18px;color:#ffffff;letter-spacing:1px;text-transform:uppercase">
+                            TAN & TUAN CLOTHING
+                        </span>
+                    </div>
+                        <span style="font-weight:800;font-size:16px;color:#ffffff;letter-spacing:1px;text-transform:uppercase">
+                            STREETWEAR STUDIO
                         </span>
                     </div>
 
-                    <p class="footer-description">
-                        Cửa hàng thời trang trực tuyến dành cho
-                        khách hàng yêu thích phong cách trẻ trung,
-                        hiện đại và tiện lợi.
+                    <p class="footer-description" style="color:#94a3b8;font-size:13.5px;line-height:1.7;margin-bottom:20px">
+                        TAN & TUAN CLOTHING - Baddest gear that you want so bad. Explore a wide range of Streetwear clothing & accessories inspired by Vietnamese Culture. |Based in SAIGON|
                     </p>
+
+                    <div style="display:flex;gap:12px;font-size:14px;color:#cbd5e1">
+                        <span style="background:#1e293b;padding:6px 12px;border-radius:8px;font-weight:700">📍 SAIGON</span>
+                        <span style="background:#1e293b;padding:6px 12px;border-radius:8px;font-weight:700">📍 HANOI</span>
+                        <span style="background:#1e293b;padding:6px 12px;border-radius:8px;font-weight:700">📍 DANANG</span>
+                    </div>
                 </div>
 
                 <div class="footer-column">
-                    <h3>Mua sắm</h3>
-
-                    <a href="javascript:void(0)">
-                        Tất cả sản phẩm
-                    </a>
-
-                    <a href="javascript:void(0)">
-                        Danh mục sản phẩm
-                    </a>
-
-                    <a href="javascript:void(0)">
-                        Giỏ hàng
-                    </a>
+                    <h3 style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:1px;color:#fff;margin-bottom:16px">BỘ SƯU TẬP</h3>
+                    <a href="<?= BASE_URL ?>?action=products" style="color:#94a3b8">Tất cả sản phẩm</a>
+                    <a href="<?= BASE_URL ?>?action=products&sort=rating" style="color:#94a3b8">Đánh giá cao</a>
+                    <a href="<?= BASE_URL ?>?action=categories" style="color:#94a3b8">Danh mục Streetwear</a>
+                    <a href="<?= BASE_URL ?>?action=cart" style="color:#94a3b8">Giỏ hàng của bạn</a>
                 </div>
 
                 <div class="footer-column">
-                    <h3>Tài khoản</h3>
-
-                    <a href="javascript:void(0)">
-                        Thông tin cá nhân
-                    </a>
-
-                    <a href="javascript:void(0)">
-                        Đơn hàng của tôi
-                    </a>
-
-                    <a href="<?= BASE_URL ?>?action=logout">
-                        Đăng xuất
-                    </a>
+                    <h3 style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:1px;color:#fff;margin-bottom:16px">HỆ THỐNG STORE</h3>
+                    <span style="color:#94a3b8;display:block;margin-bottom:8px">🏢 93 Đặng Văn Ngữ, P.14, Q.Phú Nhuận, TP.HCM</span>
+                    <span style="color:#94a3b8;display:block;margin-bottom:8px">🏢 117 Trần Quang Diệu, P.14, Q.3, TP.HCM</span>
+                    <span style="color:#94a3b8;display:block;margin-bottom:8px">🏢 Vincom Bà Triệu, Hà Nội</span>
                 </div>
 
                 <div class="footer-column">
-                    <h3>Liên hệ</h3>
-
-                    <span>
-                        Email: support@fashion.local
-                    </span>
-
-                    <span>
-                        Điện thoại: 0900 000 000
-                    </span>
-
-                    <span>
-                        Thời gian: 08:00 - 21:00
-                    </span>
+                    <h3 style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:1px;color:#fff;margin-bottom:16px">LIÊN HỆ & BẢO HÀNH</h3>
+                    <span style="color:#94a3b8;display:block;margin-bottom:6px">📞 Hotline: <strong>1900 63 60 99</strong></span>
+                    <span style="color:#94a3b8;display:block;margin-bottom:6px">✉️ Email: support@badhabitsstore.vn</span>
+                    <span style="color:#94a3b8;display:block;margin-bottom:6px">⏰ Giờ mở cửa: 09:30 - 21:30 hàng ngày</span>
                 </div>
 
             </div>
 
-            <div class="footer-bottom">
-                <div class="container footer-bottom-inner">
-
-                    <span>
-                        © <?= date('Y') ?> Fashion Store.
-                    </span>
-
-                    <span>
-                        Thanh toán an toàn · Bảo mật thông tin
-                    </span>
-
+            <div class="footer-bottom" style="border-top:1px solid #1e293b;margin-top:40px;padding-top:20px;background:#030712">
+                <div class="container footer-bottom-inner" style="display:flex;justify-content:space-between;color:#64748b;font-size:12px">
+                    <span>© <?= date('Y') ?> TAN & TUAN CLOTHING OFFICIAL. All rights reserved.</span>
+                    <span>CHÍNH HÃNG 100% · CAM KẾT ĐỔI TRẢ 7 NGÀY · SHIP COD TOÀN QUỐC</span>
                 </div>
             </div>
-
         </footer>
     </div>
 

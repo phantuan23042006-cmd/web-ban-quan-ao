@@ -4,8 +4,12 @@ class Product extends BaseModel
 {
     protected $table = 'san_pham';
 
-    public function getCatalog(array $filters = [], int $limit = 24): array
+        public function getCatalog(array $filters = [], int $page = 1, int $perPage = 12): array
     {
+        $page = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $offset = ($page - 1) * $perPage;
+
         $conditions = [];
         $params = [];
         $keyword = preg_replace('/\s+/u', ' ', trim((string) ($filters['keyword'] ?? '')));
@@ -23,11 +27,31 @@ class Product extends BaseModel
         $having = [];
         if (($filters['min_price'] ?? '') !== '') { $having[] = 'gia_den >= :min_price'; $params[':min_price'] = (float) $filters['min_price']; }
         if (($filters['max_price'] ?? '') !== '') { $having[] = 'gia_tu <= :max_price'; $params[':max_price'] = (float) $filters['max_price']; }
-        $sorts = ['price_asc' => 'gia_tu ASC, p.id DESC', 'price_desc' => 'gia_tu DESC, p.id DESC', 'rating' => 'danh_gia_tb DESC, tong_danh_gia DESC, p.id DESC'];
+
+        $sorts = [
+            'price_asc'  => 'gia_tu ASC, p.id DESC',
+            'price_desc' => 'gia_tu DESC, p.id DESC',
+            'rating'     => 'danh_gia_tb DESC, tong_danh_gia DESC, p.id DESC'
+        ];
+
         $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
         $havingSql = $having ? 'HAVING ' . implode(' AND ', $having) : '';
         $orderBy = $sorts[$filters['sort'] ?? ''] ?? 'p.id DESC';
-        $limit = max(1, min(100, $limit));
+
+        $countSql = "SELECT COUNT(*) FROM (
+                        SELECT p.id,
+                               COALESCE(MIN(v.gia_ban), 0) AS gia_tu,
+                               COALESCE(MAX(v.gia_ban), 0) AS gia_den
+                        FROM {$this->table} p
+                        LEFT JOIN chi_tiet_san_pham v ON v.san_pham_id = p.id
+                        {$where}
+                        GROUP BY p.id
+                        {$havingSql}
+                    ) AS sub";
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $totalItems = (int) $countStmt->fetchColumn();
+
         $sql = "SELECT p.id, p.name, p.gioi_thieu, p.anh, p.danh_muc_id, c.name AS category_name,
                     COALESCE(MIN(v.gia_ban), 0) AS gia_tu, COALESCE(MAX(v.gia_ban), 0) AS gia_den,
                     COALESCE(SUM(v.so_luong), 0) AS ton_kho, ROUND(COALESCE(AVG(r.so_sao), 0), 1) AS danh_gia_tb,
@@ -36,10 +60,18 @@ class Product extends BaseModel
                 LEFT JOIN danh_muc c ON c.id = p.danh_muc_id
                 LEFT JOIN chi_tiet_san_pham v ON v.san_pham_id = p.id
                 LEFT JOIN danh_gia r ON r.san_pham_id = p.id
-                {$where} GROUP BY p.id {$havingSql} ORDER BY {$orderBy} LIMIT {$limit}";
+                {$where} GROUP BY p.id {$havingSql} ORDER BY {$orderBy} LIMIT {$perPage} OFFSET {$offset}";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        $items = $stmt->fetchAll();
+
+        return [
+            'items'        => $items,
+            'total_items'  => $totalItems,
+            'total_pages'  => max(1, (int) ceil($totalItems / $perPage)),
+            'current_page' => $page,
+            'per_page'     => $perPage,
+        ];
     }
 
     /**

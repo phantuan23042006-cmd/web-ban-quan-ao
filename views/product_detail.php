@@ -386,7 +386,9 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                 <input type="number" id="detail_quantity" name="quantity" value="1" min="1" class="qty-input" oninput="validateDirectQty(this)" onblur="checkMinQty(this)">
                                 <button type="button" class="qty-btn" onclick="adjustQty(1)">+</button>
                             </div>
-                            <button type="submit" class="btn btn-primary" style="flex:1;">🛒 Thêm vào giỏ hàng</button>
+                            <button type="submit" class="btn btn-primary" style="flex:1;background:#000;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:15px;text-transform:uppercase;letter-spacing:1px;padding:14px 20px;border-radius:12px;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.3);cursor:pointer">
+                                🛒 THÊM VÀO GIỎ HÀNG
+                            </button>
                         </div>
                     <?php endif; ?>
                 </form>
