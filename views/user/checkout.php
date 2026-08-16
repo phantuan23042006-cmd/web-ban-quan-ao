@@ -18,6 +18,14 @@ unset($_SESSION['error_message']);
     <?php if ($errorMessage): ?>
         <div class="flash flash-error"><?= e($errorMessage) ?></div>
     <?php endif; ?>
+    <?php if (!empty($warnings)): ?>
+        <?php foreach ($warnings as $warn): ?>
+            <div class="flash flash-warning" style="background:#fef3c7;color:#92400e;padding:12px 16px;border-radius:12px;margin-bottom:16px;font-size:.9rem;font-weight:600;border:1px solid #fde68a">
+                ⚠️ <?= e($warn) ?>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
 
     <?php if (empty($cartItems)): ?>
 

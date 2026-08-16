@@ -382,7 +382,8 @@ if (function_exists('mb_substr')) {
                 rgba(15, 23, 42, 0.14);
         }
 
-        .account.open .account-menu {
+        .account.open .account-menu,
+        .account-dropdown.open .account-menu {
             display: block;
         }
 
@@ -1203,12 +1204,7 @@ if (function_exists('mb_substr')) {
 
                 <div class="admin-header-actions">
 
-                    <a
-                        class="admin-header-link admin-view-site"
-                        href="<?= BASE_URL ?>"
-                    >
-                        Xem website
-                    </a>
+                    
 
                     <a
                         class="admin-header-link admin-logout"

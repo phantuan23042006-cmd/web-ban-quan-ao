@@ -150,8 +150,6 @@ switch ($action) {
     |--------------------------------------------------------------------------
     */
     case 'logout':
-        routeRequireLogin();
-
         (new AuthController())->logout();
         break;
 

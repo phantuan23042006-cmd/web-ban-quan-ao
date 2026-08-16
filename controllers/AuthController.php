@@ -384,46 +384,32 @@ class AuthController
     /**
      * Đăng xuất tài khoản.
      */
-    public function logout()
+        public function logout()
     {
-        /*
-         * Xóa toàn bộ dữ liệu session.
-         */
         $_SESSION = [];
 
-        /*
-         * Xóa cookie session.
-         */
         if (ini_get('session.use_cookies')) {
-            $cookieParameters =
-                session_get_cookie_params();
-
+            $params = session_get_cookie_params();
             setcookie(
                 session_name(),
                 '',
                 time() - 42000,
-                $cookieParameters['path'],
-                $cookieParameters['domain'],
-                $cookieParameters['secure'],
-                $cookieParameters['httponly']
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
             );
         }
 
-        /*
-         * Kết thúc session hiện tại.
-         */
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
 
-        /*
-         * Khởi tạo session mới để hiển thị thông báo.
-         */
         session_start();
-        session_regenerate_id(true);
+        $_SESSION['success_message'] = 'Bạn đã đăng xuất thành công.';
 
-        $_SESSION['success_message'] =
-            'Bạn đã đăng xuất thành công.';
-
-        $this->redirect('login');
+        header('Location: ' . BASE_URL . '?action=login');
+        exit;
     }
 
     /**

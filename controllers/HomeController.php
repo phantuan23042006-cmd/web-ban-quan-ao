@@ -200,7 +200,25 @@ class HomeController
     public function updateCart(): void { $this->requireLogin();try{(new Cart())->updateQuantity((int)($_POST['variant_id']??$_GET['variant_id']??0),(int)($_POST['quantity']??$_GET['quantity']??0));}catch(Throwable $e){$_SESSION['error_message']=$e->getMessage();}header('Location: '.BASE_URL.'?action=cart');exit; }
     public function removeFromCart(): void { $this->requireLogin();(new Cart())->remove((int)($_POST['variant_id']??$_GET['variant_id']??0));header('Location: '.BASE_URL.'?action=cart');exit; }
     public function clearCart(): void { $this->requireLogin();(new Cart())->clear();header('Location: '.BASE_URL.'?action=cart');exit; }
-    public function checkout(): void { $this->requireLogin();$this->rejectAdmin();$warnings=[];$cartItems=(new Cart())->getItems($warnings);$totalAmount=array_sum(array_column($cartItems,'subtotal'));$user=$_SESSION['user'];$title='Thanh toán';$view='user/checkout';$layout='user';require PATH_VIEW_MAIN; }
+    public function checkout(): void {
+        $this->requireLogin();
+        $this->rejectAdmin();
+        $warnings = [];
+        $cartItems = (new Cart())->getItems($warnings);
+
+        if (!empty($_SESSION['warnings'])) {
+            $warnings = array_merge($_SESSION['warnings'], $warnings);
+            unset($_SESSION['warnings']);
+        }
+
+        $totalAmount = array_sum(array_column($cartItems, 'subtotal'));
+        $user = $_SESSION['user'];
+        $title = 'Thanh toán';
+        $view = 'user/checkout';
+        $layout = 'user';
+
+        require PATH_VIEW_MAIN;
+    }
     public function placeOrder(): void
     {
         $this->requireLogin();
@@ -221,7 +239,7 @@ class HomeController
         ];
 
         if (!$recipient['name'] || !$recipient['phone'] || !$recipient['address']) {
-            $_SESSION['error_message'] = 'Vui lòng nhập đủ thông tin nhận hàng.';
+            $_SESSION['error_message'] = 'Vui lòng nhập đầy đủ thông tin nhận hàng.';
             header('Location: ' . BASE_URL . '?action=checkout');
             exit;
         }
@@ -234,8 +252,16 @@ class HomeController
             $items = $cart->getItems($warnings);
 
             if (empty($items)) {
-                $_SESSION['error_message'] = 'Giỏ hàng đang trống.';
+                $_SESSION['error_message'] = 'Giỏ hàng của bạn đang trống. Vui lòng chọn sản phẩm trước khi thanh toán.';
                 header('Location: ' . BASE_URL . '?action=cart');
+                exit;
+            }
+
+            // Nếu có cảnh báo thay đổi tồn kho thực tế do người khác mua trước
+            if (!empty($warnings)) {
+                $_SESSION['warnings'] = $warnings;
+                $_SESSION['error_message'] = 'Thông tin giỏ hàng của bạn vừa được tự động cập nhật do thay đổi số lượng tồn kho kho hàng. Vui lòng kiểm tra lại đơn hàng.';
+                header('Location: ' . BASE_URL . '?action=checkout');
                 exit;
             }
 
